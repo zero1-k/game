@@ -1,0 +1,1149 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+    <title>五行棋 - 互动版</title>
+    <style>
+        :root {
+            --board-bg: #e6b971;
+            --line-color: #5d4037;
+            --highlight-color: rgba(255, 255, 255, 0.5);
+            --valid-move-color: rgba(76, 175, 80, 0.4);
+        }
+
+        body {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            margin: 0;
+            background-color: #2c3e50;
+            font-family: "Noto Serif CJK SC", serif;
+            color: white;
+        }
+
+        h1 {
+            margin-bottom: 20px;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+        }
+
+        #game-container {
+            position: relative;
+            background-color: var(--board-bg);
+            padding: 40px;
+            border-radius: 8px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.8), inset 0 0 100px rgba(0, 0, 0, 0.1);
+            border: 4px solid var(--line-color);
+        }
+
+        /* 交叉点点击区域。棋盘尺寸7x7, 单元格原本是60x60。为了让棋子落在交点上，我们将 grid 视为交点本身，
+           这里我们把 intersection 设置为以交点为中心的点击框 */
+        .intersection {
+            width: 60px;
+            height: 60px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            position: relative;
+            z-index: 10;
+        }
+
+        /* 将交叉点整体向左上平移 30px（半个格子的宽度），这样网格线的左上角 (top:30, left:30) 恰好穿过第一行第一列的交点中心 */
+        #board {
+            display: grid;
+            grid-template-columns: repeat(9, 60px);
+            grid-template-rows: repeat(9, 60px);
+            position: relative;
+            margin-top: -30px;
+            margin-left: -30px;
+        }
+
+        /* 背景网格线。让它们基于容器绝对定位，正好穿过平移后的 board 交点 */
+        .board-lines-h,
+        .board-lines-v {
+            position: absolute;
+            top: 30px;
+            left: 30px;
+            pointer-events: none;
+        }
+
+        .line {
+            background-color: var(--line-color);
+            position: absolute;
+        }
+
+        .line-h {
+            height: 2px;
+            width: 480px;
+        }
+
+        .line-v {
+            width: 2px;
+            height: 480px;
+        }
+
+        /* 交叉点点击区域 */
+        .intersection {
+            width: 60px;
+            height: 60px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            position: relative;
+            z-index: 10;
+        }
+
+        .intersection:hover::after {
+            content: '';
+            width: 20px;
+            height: 20px;
+            background-color: var(--highlight-color);
+            border-radius: 50%;
+        }
+
+        .intersection.selected::after {
+            content: '';
+            width: 50px;
+            height: 50px;
+            border: 2px dashed #ffeb3b;
+            border-radius: 50%;
+            position: absolute;
+            animation: rotate 4s linear infinite;
+        }
+
+        .intersection.valid-move::before {
+            content: '';
+            width: 15px;
+            height: 15px;
+            background-color: var(--valid-move-color);
+            border-radius: 50%;
+            position: absolute;
+        }
+
+        @keyframes rotate {
+            from {
+                transform: rotate(0deg);
+            }
+
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        /* 受到威胁可被捕获的目标背景光晕 (适当削弱，保持沉稳) */
+        .intersection.capturable::after {
+            content: '';
+            position: absolute;
+            width: 45px;
+            height: 45px;
+            background: rgba(255, 50, 50, 0.4);
+            border-radius: 50%;
+            pointer-events: none;
+            box-shadow: 0 0 10px rgba(255, 0, 0, 0.6);
+            z-index: 5;
+            animation: pulse-danger-moderate 1.2s infinite alternate;
+        }
+
+        /* 给处于危险的棋子本身套上一层淡淡的红框 */
+        .intersection.capturable .piece {
+            border-color: #ff5252 !important;
+            box-shadow: 0 0 15px rgba(255, 82, 82, 0.8) !important;
+        }
+
+        @keyframes pulse-danger-moderate {
+            0% {
+                transform: scale(0.95);
+                opacity: 0.6;
+            }
+
+            100% {
+                transform: scale(1.05);
+                opacity: 0.9;
+            }
+        }
+
+        /* 棋子式样 */
+        .piece {
+            width: 48px;
+            height: 48px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: 24px;
+            box-shadow: 2px 4px 6px rgba(0, 0, 0, 0.3);
+            user-select: none;
+            transition: transform 0.2s;
+            z-index: 20;
+        }
+
+        .piece:active {
+            transform: scale(0.9);
+        }
+
+        .piece.yin {
+            background: #000;
+            color: #fff;
+            border: 1px solid #333;
+        }
+
+        .piece.yang {
+            background: #fff;
+            color: #000;
+            border: 1px solid #ccc;
+            font-size: 30px;
+        }
+
+        /* 五行棋子不再使用杂乱的颜色背景，而是通过字体颜色和发光来区别五行属性 */
+        /* 通过复合选择器提升黑白背景的权重，确保能够覆盖任何残留配置 */
+        .piece.black {
+            background: linear-gradient(135deg, #444, #111) !important;
+            border: 2px solid #666 !important;
+            box-shadow: 2px 4px 6px rgba(0, 0, 0, 0.6), inset 0 0 10px rgba(255, 255, 255, 0.1) !important;
+        }
+
+        .piece.white {
+            background: linear-gradient(135deg, #fff, #ddd) !important;
+            border: 2px solid #999 !important;
+            box-shadow: 2px 4px 6px rgba(0, 0, 0, 0.3), inset 0 0 10px rgba(0, 0, 0, 0.05) !important;
+        }
+
+        .piece.metal {
+            color: #fbc02d;
+            text-shadow: 0 0 8px #fbc02d;
+            font-weight: bold;
+        }
+
+        .piece.wood {
+            color: #8bc34a;
+            text-shadow: 0 0 8px #8bc34a;
+            font-weight: bold;
+        }
+
+        .piece.water {
+            color: #4fc3f7;
+            text-shadow: 0 0 8px #4fc3f7;
+            font-weight: bold;
+        }
+
+        .piece.fire {
+            color: #ff7043;
+            text-shadow: 0 0 8px #ff7043;
+            font-weight: bold;
+        }
+
+        .piece.earth {
+            color: #8d6e63;
+            text-shadow: 0 0 8px #8d6e63;
+            font-weight: bold;
+        }
+
+        .piece.white {
+            background: linear-gradient(135deg, #fff, #ddd);
+            border: 2px solid #ccc;
+            box-shadow: 2px 4px 6px rgba(0, 0, 0, 0.3), inset 0 0 10px rgba(0, 0, 0, 0.05);
+        }
+
+        /* 阴阳保留纯色特例 */
+        .piece.yin {
+            background: #000;
+            color: #fff;
+            border: 2px solid #555;
+            text-shadow: none;
+        }
+
+        .piece.yang {
+            background: #fff;
+            color: #000;
+            border: 2px solid #ccc;
+            font-size: 30px;
+            text-shadow: none;
+        }
+
+        /* 迷雾隐匿样式 */
+        .piece.hidden {
+            background: repeating-linear-gradient(45deg, #606060, #606060 10px, #505050 10px, #505050 20px) !important;
+            color: #aaa !important;
+            text-shadow: none !important;
+            border: 2px dashed #888 !important;
+            cursor: help;
+        }
+
+        .piece.hidden .piece-energy {
+            display: none;
+        }
+
+        #turn-indicator {
+            margin-top: 10px;
+            font-size: 24px;
+            font-weight: bold;
+            padding: 10px 30px;
+            border-radius: 8px;
+            transition: all 0.3s ease;
+        }
+
+        .turn-black {
+            background-color: #222;
+            color: #fff;
+            box-shadow: 0 0 15px rgba(0, 0, 0, 0.5);
+        }
+
+        .turn-white {
+            background-color: #eee;
+            color: #111;
+            box-shadow: 0 0 15px rgba(255, 255, 255, 0.5);
+        }
+
+        #info {
+            margin-top: 15px;
+            font-size: 16px;
+            background: rgba(0, 0, 0, 0.5);
+            padding: 8px 16px;
+            border-radius: 20px;
+            color: #bbb;
+        }
+
+        /* 外部手牌存储区样式 */
+        #reserve-container {
+            margin-top: 30px;
+            display: flex;
+            gap: 40px;
+            justify-content: center;
+        }
+
+        .reserve-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            cursor: pointer;
+            padding: 15px;
+            border-radius: 12px;
+            border: 3px solid transparent;
+            transition: all 0.2s;
+            background: rgba(255, 255, 255, 0.05);
+        }
+
+        .reserve-item:hover {
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        .reserve-item.selected {
+            border-color: #ffeb3b;
+            background: rgba(255, 235, 59, 0.2);
+            transform: scale(1.1);
+        }
+
+        .reserve-item .piece {
+            position: static;
+            cursor: pointer;
+            box-shadow: none;
+        }
+
+        #game-messages {
+            margin-top: 15px;
+            font-size: 1.1rem;
+            color: #ffca28;
+            font-weight: bold;
+        }
+
+        #round-info {
+            background: rgba(0, 0, 0, 0.4);
+            padding: 8px 16px;
+            border-radius: 20px;
+            margin-bottom: 15px;
+            font-size: 1.2rem;
+            border: 1px solid #ffca28;
+            color: #ffca28;
+            letter-spacing: 1px;
+        }
+
+        /* --- 内外气新样式 --- */
+        #vitality-panel {
+            display: flex;
+            gap: 60px;
+            margin-bottom: 20px;
+            background: rgba(0, 0, 0, 0.4);
+            padding: 15px 40px;
+            border-radius: 50px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .vitality-item {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .vitality-label {
+            font-size: 18px;
+            color: #ccc;
+        }
+
+        .vitality-value {
+            font-size: 28px;
+            font-family: 'Orbitron', sans-serif;
+            /* 假设有这种科技感字体，没有也无妨 */
+            color: #ffeb3b;
+            text-shadow: 0 0 10px rgba(255, 235, 59, 0.5);
+            min-width: 40px;
+            text-align: center;
+        }
+
+        /* 棋子内气标签 */
+        .piece-energy {
+            position: absolute;
+            bottom: -8px;
+            right: -8px;
+            background: #1b5e20;
+            color: #fff;
+            font-size: 12px;
+            width: 18px;
+            height: 18px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+            border: 1px solid #4caf50;
+            box-shadow: 0 0 5px rgba(0, 255, 0, 0.5);
+            z-index: 30;
+            font-family: Arial, sans-serif;
+            pointer-events: none;
+        }
+
+        .piece.white .piece-energy {
+            background: #b71c1c;
+            border-color: #f44336;
+            box-shadow: 0 0 5px rgba(255, 0, 0, 0.5);
+        }
+    </style>
+</head>
+
+<body>
+    <h1>五行棋</h1>
+
+    <div id="round-info">第 <span id="round-num">1</span> 回合</div>
+
+    <div id="vitality-panel">
+        <div class="vitality-item">
+            <span class="vitality-label">黑方气 (☯)</span>
+            <span id="vitality-black" class="vitality-value">20</span>
+        </div>
+        <div class="vitality-item">
+            <span class="vitality-label">白方气 (○)</span>
+            <span id="vitality-white" class="vitality-value">20</span>
+        </div>
+    </div>
+
+    <div id="turn-indicator" class="turn-black">当前回合：黑方</div>
+
+    <div id="game-container">
+        <!-- 装饰线 -->
+        <div class="board-lines-h">
+            <div class="line line-h" style="top: 0px"></div>
+            <div class="line line-h" style="top: 60px"></div>
+            <div class="line line-h" style="top: 120px"></div>
+            <div class="line line-h" style="top: 180px"></div>
+            <div class="line line-h" style="top: 240px"></div>
+            <div class="line line-h" style="top: 300px"></div>
+            <div class="line line-h" style="top: 360px"></div>
+            <div class="line line-h" style="top: 420px"></div>
+            <div class="line line-h" style="top: 480px"></div>
+        </div>
+        <div class="board-lines-v">
+            <div class="line line-v" style="left: 0px"></div>
+            <div class="line line-v" style="left: 60px"></div>
+            <div class="line line-v" style="left: 120px"></div>
+            <div class="line line-v" style="left: 180px"></div>
+            <div class="line line-v" style="left: 240px"></div>
+            <div class="line line-v" style="left: 300px"></div>
+            <div class="line line-v" style="left: 360px"></div>
+            <div class="line line-v" style="left: 420px"></div>
+            <div class="line line-v" style="left: 480px"></div>
+        </div>
+
+        <div id="board"></div>
+    </div>
+
+    <div id="info">点击选择五行棋子移动，或选择下方阴阳棋子落子卡位</div>
+
+    <div id="reserve-container">
+        <div id="reserve-yin" class="reserve-item" onclick="selectReserve('yin')">
+            <div class="piece yin">☯</div>
+            <div class="reserve-label">阴棋 (黑方)</div>
+        </div>
+        <div id="reserve-yang" class="reserve-item" onclick="selectReserve('yang')">
+            <div class="piece yang">○</div>
+            <div class="reserve-label">阳棋 (白方)</div>
+        </div>
+    </div>
+
+    <script>
+        const boardSize = 9;
+        let grid = Array(boardSize).fill(null).map(() => Array(boardSize).fill(null));
+        let selectedPos = null;
+        let selectedReserve = null; // 当前手牌区选中的阴/阳棋类型
+
+        let currentPlayer = 'black'; // 黑方先手
+        let roundCount = 1;
+
+        let playerVitality = { black: 20, white: 20 };
+        // 开荒期动作计数：前10回合必须执行 5次揭开 (reveal) 和 5次落子 (drop)
+        let playerActionCounts = {
+            black: { reveal: 0, drop: 0 },
+            white: { reveal: 0, drop: 0 }
+        };
+        const initialEnergyMap = {
+            metal: 3, wood: 4, water: 5, fire: 3, earth: 4, yin: 1, yang: 1
+        };
+
+        const GENERA = { wood: 'fire', fire: 'earth', earth: 'metal', metal: 'water', water: 'wood' };
+        const OVERCOMES = { wood: 'earth', earth: 'water', water: 'fire', fire: 'metal', metal: 'wood' };
+
+        function updateVitalityDisplay() {
+            document.getElementById('vitality-black').textContent = playerVitality.black;
+            document.getElementById('vitality-white').textContent = playerVitality.white;
+        }
+
+        function switchTurn() {
+            console.log(`[Before] Player: ${currentPlayer}, Round: ${roundCount}`);
+
+            // 只有当刚动完的人是白方时，回合数才增加
+            if (currentPlayer === 'white') {
+                roundCount++;
+                document.getElementById('round-num').textContent = roundCount;
+                console.log(`[Turn System] Round incremented to ${roundCount}`);
+            }
+
+            // 切换玩家
+            currentPlayer = currentPlayer === 'black' ? 'white' : 'black';
+
+            const indicator = document.getElementById('turn-indicator');
+            indicator.className = currentPlayer === 'black' ? 'turn-black' : 'turn-white';
+            indicator.textContent = `当前行动：${currentPlayer === 'black' ? '黑方 (阴)' : '白方 (阳)'}`;
+
+            console.log(`[After] Next Player: ${currentPlayer}`);
+
+            // 检查胜负
+            checkGameOver();
+
+            // 切换回合时清空选择状态
+            clearSelection();
+            updateVitalityDisplay();
+            renderBoard();
+        }
+
+        function checkGameOver() {
+            if (playerVitality.black < 10) {
+                alert("游戏结束！白方获得胜利 (黑方气不足10)");
+                location.reload();
+            } else if (playerVitality.white < 10) {
+                alert("游戏结束！黑方获得胜利 (白方气不足10)");
+                location.reload();
+            }
+        }
+
+        const piecesTemplate = [
+            { type: 'metal', symbol: '金' },
+            { type: 'wood', symbol: '木' },
+            { type: 'water', symbol: '水' },
+            { type: 'fire', symbol: '火' },
+            { type: 'earth', symbol: '土' }
+        ];
+
+        function shuffle(array) {
+            for (let i = array.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [array[i], array[j]] = [array[j], array[i]];
+            }
+            return array;
+        }
+
+        function initData() {
+            // 清空 grid
+            grid = Array(boardSize).fill(null).map(() => Array(boardSize).fill(null));
+
+            // 黑方分配：第0行，9个位置选5个
+            let blackCols = shuffle([0, 1, 2, 3, 4, 5, 6, 7, 8]).slice(0, 5);
+            piecesTemplate.forEach((p, i) => {
+                grid[0][blackCols[i]] = {
+                    type: p.type,
+                    color: 'black',
+                    symbol: p.symbol,
+                    isRevealed: false
+                };
+            });
+
+            // 白方分配：第8行，9个位置选5个
+            let whiteCols = shuffle([0, 1, 2, 3, 4, 5, 6, 7, 8]).slice(0, 5);
+            piecesTemplate.forEach((p, i) => {
+                grid[8][whiteCols[i]] = {
+                    type: p.type,
+                    color: 'white',
+                    symbol: p.symbol,
+                    isRevealed: false
+                };
+            });
+
+            updateVitalityDisplay();
+        }
+
+        function getPathPoints(r1, c1, r2, c2) {
+            const points = [];
+            const steps = Math.max(Math.abs(r2 - r1), Math.abs(c2 - c1));
+            if (steps === 0) return points;
+            const step_r = (r2 - r1) / steps;
+            const step_c = (c2 - c1) / steps;
+            for (let i = 1; i < steps; i++) {
+                points.push({ r: r1 + i * step_r, c: c1 + i * step_c });
+            }
+            return points;
+        }
+
+        function isPathClear(points) {
+            for (const p of points) {
+                if (p.r >= 0 && p.r < boardSize && p.c >= 0 && p.c < boardSize) {
+                    if (grid[p.r][p.c] !== null) {
+                        return false;
+                    }
+                }
+            }
+            return true;
+        }
+
+        function calculateEnergy(r, c) {
+            const p = grid[r][c];
+            if (!p) return 0;
+            // 即使未揭开，也返回其基础内气数值用于战斗计算，防止产生 NaN
+            const init = initialEnergyMap[p.type];
+            if (!p.isRevealed && p.type !== 'yin' && p.type !== 'yang') return init;
+            if (p.type === 'yin' || p.type === 'yang') return init;
+
+            let delta = 0;
+            const dirs = [{ r: -1, c: 0 }, { r: 1, c: 0 }, { r: 0, c: -1 }, { r: 0, c: 1 }];
+            for (let d of dirs) {
+                const nr = r + d.r, nc = c + d.c;
+                if (nr >= 0 && nr < boardSize && nc >= 0 && nc < boardSize) {
+                    const nb = grid[nr][nc];
+                    if (!nb) continue;
+                    // 阴阳效应（始终生效）
+                    if (nb.type === 'yin' || nb.type === 'yang') {
+                        if (nb.color === p.color) delta += 1; else delta -= 1;
+                    } else if (nb.isRevealed && nb.color === p.color) {
+                        // 【墙壁化修复】生我者增 (+1)，仅限已揭开棋子
+                        if (GENERA[nb.type] === p.type) delta += 1;
+                    } else if (nb.isRevealed) {
+                        // 【墙壁化修复】克我者减 (-1)，仅限已揭开棋子
+                        if (OVERCOMES[nb.type] === p.type) delta -= 1;
+                    }
+                }
+            }
+            // 上下限限制 Initial +/- 4
+            return Math.max(init - 4, Math.min(init + 4, init + delta));
+        }
+
+        function canMove(p, from, to) {
+            // 0. 实时内气检查
+            if (p.type !== 'yin' && p.type !== 'yang') {
+                const currentEnergy = calculateEnergy(from.r, from.c);
+                // 【水系特殊限制】水内气 <= 2 无法移动，其他五行 <= 1 无法移动
+                const threshold = (p.type === 'water') ? 2 : 1;
+                if (currentEnergy <= threshold) return false;
+            }
+
+            const dx = Math.abs(to.c - from.c);
+            const dy = Math.abs(to.r - from.r);
+            if (dx === 0 && dy === 0) return false;
+
+            // 1. 战斗规则判定
+            const target = grid[to.r][to.c];
+            if (target) {
+                if (target.color === p.color) return false; // 己方阻挡
+
+                // 【墙壁化修复】未揭开的棋子视为障碍物（墙），不可作为终点攻击
+                if (!target.isRevealed && target.type !== 'yin' && target.type !== 'yang') return false;
+
+                // 子食母门槛 (B 生 A，A 吃 B)
+                if (GENERA[target.type] === p.type) {
+                    const initSelf = initialEnergyMap[p.type];
+                    const currentEnergy = calculateEnergy(from.r, from.c);
+                    if (currentEnergy < initSelf) return false;
+                }
+            }
+
+            const r1 = from.r, c1 = from.c;
+            const r2 = to.r, c2 = to.c;
+
+            switch (p.type) {
+                case 'metal': // 金：水平或垂直，最大步长3，无阻挡
+                    if ((dx === 0 && dy > 0) || (dy === 0 && dx > 0)) {
+                        if (Math.max(dx, dy) <= 3) {
+                            return isPathClear(getPathPoints(r1, c1, r2, c2));
+                        }
+                    }
+                    return false;
+
+                case 'wood': // 木：L形移动，横纵绝对位移之和最大为3
+                    if (dx > 0 && dy > 0 && (dx + dy) <= 3) {
+                        // 路径A：先横后竖
+                        const cornerA = { r: r1, c: c2 }; // DOM坐标中 c 是横, r 是纵
+                        const pathA1 = getPathPoints(r1, c1, cornerA.r, cornerA.c);
+                        const pathA2 = getPathPoints(cornerA.r, cornerA.c, r2, c2);
+                        const isCornerAEmpty = (grid[cornerA.r][cornerA.c] === null);
+                        if (isCornerAEmpty && isPathClear(pathA1) && isPathClear(pathA2)) return true;
+
+                        // 路径B：先竖后横
+                        const cornerB = { r: r2, c: c1 };
+                        const pathB1 = getPathPoints(r1, c1, cornerB.r, cornerB.c);
+                        const pathB2 = getPathPoints(cornerB.r, cornerB.c, r2, c2);
+                        const isCornerBEmpty = (grid[cornerB.r][cornerB.c] === null);
+                        if (isCornerBEmpty && isPathClear(pathB1) && isPathClear(pathB2)) return true;
+                    }
+                    return false;
+
+                case 'water': { // 水：按显式折线路径组合判定，每条路径的折点都必须为空
+                    // 1+√2 的组合 或 √2+√2 的组合，折点不能有棋子
+                    for (let cr = 0; cr < boardSize; cr++) {
+                        for (let cc = 0; cc < boardSize; cc++) {
+                            const dx1 = Math.abs(cr - r1);
+                            const dy1 = Math.abs(cc - c1);
+                            const dx2 = Math.abs(r2 - cr);
+                            const dy2 = Math.abs(c2 - cc);
+
+                            const is_p1_1 = (dx1 + dy1 === 1);
+                            const is_p1_sqrt2 = (dx1 === 1 && dy1 === 1);
+
+                            const is_p2_1 = (dx2 + dy2 === 1);
+                            const is_p2_sqrt2 = (dx2 === 1 && dy2 === 1);
+
+                            if ((is_p1_1 && is_p2_sqrt2) ||
+                                (is_p1_sqrt2 && is_p2_1) ||
+                                (is_p1_sqrt2 && is_p2_sqrt2)) {
+
+                                // 折线要求三点不能在一条直线上 (必须是真正的折线)
+                                const is_collinear = (cr - r1) * (c2 - cc) === (cc - c1) * (r2 - cr);
+                                if (!is_collinear) {
+                                    // 检查折点是否为空（折点上不能存在棋子）
+                                    if (grid[cr][cc] === null) {
+                                        return true;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    return false;
+                }
+
+                case 'fire': // 火：移动模式1（单步平移）模式2（有炮架跳跃）
+                    if ((dx === 0 && dy > 0) || (dy === 0 && dx > 0)) {
+                        const dist = Math.max(dx, dy);
+                        if (dist === 1) {
+                            return true; // 允许1步无阻挡直线平移（因为目标格子是否有己方棋子的校验通过外部保证）
+                        } else if (dist >= 2 && dist <= 3) {
+                            const path = getPathPoints(r1, c1, r2, c2);
+                            let piecesCount = 0;
+                            for (let p of path) {
+                                if (grid[p.r][p.c] !== null) piecesCount++;
+                            }
+                            return piecesCount === 1; // 纯跳跃，中途必须刚好有1枚棋子阻挡
+                        }
+                    }
+                    return false;
+
+                case 'earth': // 土：对角线移动，最大步长2
+                    if (dx > 0 && dx === dy && dx <= 2) {
+                        return isPathClear(getPathPoints(r1, c1, r2, c2));
+                    }
+                    return false;
+
+                case 'yin':
+                case 'yang': // 阴阳棋：横纵向移动1格，且不能吃棋子（目标必须为空）
+                    if (dx + dy === 1) {
+                        return target === null;
+                    }
+                    return false;
+                default:
+                    return false;
+            }
+        }
+
+        function clearSelection() {
+            selectedPos = null;
+            selectedReserve = null;
+            renderReserves();
+        }
+
+        function selectReserve(type) {
+            // 玩家只能选自己对应的阴阳棋
+            const requiredColor = type === 'yin' ? 'black' : 'white';
+            if (requiredColor !== currentPlayer) {
+                // 如果点到了对手的棋钮，不响应
+                return;
+            }
+
+            // 如果点的是已经选中的，则取消选中
+            if (selectedReserve === type) {
+                selectedReserve = null;
+                renderReserves();
+                return;
+            }
+
+            clearSelection(); // 取消棋盘上兵种的选择
+            selectedReserve = type;
+            renderReserves();
+        }
+
+        function renderReserves() {
+            document.getElementById('reserve-yin').classList.toggle('selected', selectedReserve === 'yin');
+            document.getElementById('reserve-yang').classList.toggle('selected', selectedReserve === 'yang');
+        }
+
+        function highlightValidMoves(fromPos) {
+            const piece = grid[fromPos.r][fromPos.c];
+            if (!piece) return;
+
+            const boardEl = document.getElementById('board');
+            for (let r = 0; r < boardSize; r++) {
+                for (let c = 0; c < boardSize; c++) {
+                    const cell = boardEl.children[r * boardSize + c];
+                    cell.classList.remove('valid-move');
+                    if (canMove(piece, fromPos, { r, c })) {
+                        cell.classList.add('valid-move');
+                    }
+                }
+            }
+        }
+
+        function createPieceElement(pData, r, c) {
+            const pieceEl = document.createElement('div');
+            const isHidden = (pData.type !== 'yin' && pData.type !== 'yang' && !pData.isRevealed);
+
+            pieceEl.className = `piece ${isHidden ? 'hidden' : pData.type} ${pData.color}`;
+            pieceEl.textContent = isHidden ? '?' : pData.symbol;
+
+            // 内气标签：仅在已揭开时显示
+            const energyValue = calculateEnergy(r, c);
+            if (!isHidden) {
+                const energyEl = document.createElement('div');
+                energyEl.className = 'piece-energy';
+                energyEl.textContent = energyValue;
+                pieceEl.appendChild(energyEl);
+            }
+
+            pieceEl.addEventListener('click', (e) => {
+                e.stopPropagation();
+
+                // 揭开逻辑：如果是己方未揭开的棋子
+                if (isHidden && pData.color === currentPlayer) {
+                    // 【5+5配额检查】前10回合揭开不能超过5次
+                    if (roundCount <= 10 && playerActionCounts[currentPlayer].reveal >= 5) {
+                        alert("前10回合揭开配额已达5次，请执行落子布局。");
+                        return;
+                    }
+
+                    pData.isRevealed = true;
+                    if (roundCount <= 10) playerActionCounts[currentPlayer].reveal++;
+                    console.log(`[Action] Revealed ${pData.color} piece at (${r},${c}) (Count: ${playerActionCounts[currentPlayer].reveal}/5)`);
+                    // 【逻辑联动修正】揭开棋子会导致其从“通透体”变回“实体”，可能引发邻近棋子气数归零，必须结算提子。
+                    resolveCaptures(r, c, currentPlayer);
+                    switchTurn();
+                    return;
+                }
+
+                // 如果是未揭开的棋子，不能被选择或作为攻击目标
+                if (isHidden) return;
+
+                // 决战期判定：前10回合禁止移动
+                if (roundCount <= 10) {
+                    // 即使是已揭开的棋子，在前10回合也只能看，不能动
+                    console.log("[Phase Lock] Still in Transition Period (Round <= 10). Only Drop or Reveal allowed.");
+                    return;
+                }
+
+                // --- 以下为正常的选择和移动逻辑 ---
+                if (selectedPos && selectedPos.r === r && selectedPos.c === c) {
+                    clearSelection();
+                    return;
+                }
+
+                if (selectedPos) {
+                    const selectedPiece = grid[selectedPos.r][selectedPos.c];
+                    if (selectedPiece.color !== pData.color &&
+                        canMove(selectedPiece, selectedPos, { r, c })) {
+                        executeMove(selectedPos, { r, c });
+                        return;
+                    }
+                }
+
+                clearSelection();
+                if (pData.color === currentPlayer) {
+                    selectedPos = { r, c };
+                    // 【关键修复】点击棋盘棋子时，必须强行清除手牌（Reserve）选中状态，避免落子/移动冲突
+                    selectedReserve = null;
+                    renderReserves();
+                    renderBoard();
+                }
+            });
+
+            return pieceEl;
+        }
+
+        // --- 吃子结算逻辑 (与 Python basic_q.py 保持一致) ---
+
+        function getConnectedGroup(x, y) {
+            const group = [];
+            const visited = new Set();
+            const queue = [{ r: x, c: y }];
+            const piece = grid[x][y];
+            if (!piece || piece.color === 'neutral') return group; // Neutral pieces don't form groups for capture
+            const color = piece.color;
+
+            while (queue.length > 0) {
+                const curr = queue.shift();
+                const key = `${curr.r},${curr.c}`;
+                if (visited.has(key)) continue;
+                visited.add(key);
+                group.push(curr);
+
+                for (const dir of [[-1, 0], [1, 0], [0, -1], [0, 1]]) {
+                    const nr = curr.r + dir[0];
+                    const nc = curr.c + dir[1];
+                    if (nr >= 0 && nr < boardSize && nc >= 0 && nc < boardSize) {
+                        const neighbor = grid[nr][nc];
+                        // 【混合连通修复】只要颜色相同即视为一个整体。
+                        // 这里不再区分五行棋还是阴阳棋。
+                        if (neighbor && neighbor.color === color) {
+                            // 只有已翻开的五行棋或阴阳棋参与连通（墙壁化的未翻开棋子不参与）
+                            const isRevealed = (neighbor.type === 'yin' || neighbor.type === 'yang' || neighbor.isRevealed);
+                            if (isRevealed && !visited.has(`${nr},${nc}`)) {
+                                queue.push({ r: nr, c: nc });
+                            }
+                        }
+                    }
+                }
+            }
+            return group;
+        }
+
+        function countLiberties(group) {
+            const liberties = new Set();
+            const checkedHidden = new Set(); // 防止在隐藏棋子间循环探测
+
+            // 初始队列包含所有已知棋块的邻居
+            const queue = [];
+            for (const cell of group) {
+                for (const dir of [[-1, 0], [1, 0], [0, -1], [0, 1]]) {
+                    queue.push({ r: cell.r + dir[0], c: cell.c + dir[1] });
+                }
+            }
+
+            while (queue.length > 0) {
+                const { r, c } = queue.shift();
+                if (r < 0 || r >= boardSize || c < 0 || c >= boardSize) continue;
+
+                const target = grid[r][c];
+                if (target === null) {
+                    // 找到真正的空位气
+                    liberties.add(`${r},${c}`);
+                } else {
+                    const isHidden = (target.type !== 'yin' && target.type !== 'yang' && !target.isRevealed);
+                    if (isHidden) {
+                        // 【通透体修正】未揭开格位本身计入气位，同时继续传导气路
+                        liberties.add(`${r},${c}`);
+                        const key = `${r},${c}`;
+                        if (!checkedHidden.has(key)) {
+                            checkedHidden.add(key);
+                            for (const dir of [[-1, 0], [1, 0], [0, -1], [0, 1]]) {
+                                queue.push({ r: r + dir[0], c: c + dir[1] });
+                            }
+                        }
+                    }
+                }
+            }
+            return liberties.size;
+        }
+
+        function resolveCaptures(movedR, movedC, moverColor) {
+            let capturedAny = false;
+
+            // 为了解决长连通块漏检问题，改为扫描全盘所有敌方棋群
+            const opponentColor = moverColor === 'black' ? 'white' : 'black';
+            const allOpponentPieces = [];
+            for (let r = 0; r < boardSize; r++) {
+                for (let c = 0; c < boardSize; c++) {
+                    const p = grid[r][c];
+                    if (p && p.color === opponentColor) {
+                        const isVulnerable = (p.type === 'yin' || p.type === 'yang' || p.isRevealed);
+                        if (isVulnerable) allOpponentPieces.push({ r, c });
+                    }
+                }
+            }
+
+            const processedGroups = new Set();
+            const groupsToCapture = [];
+
+            for (const p of allOpponentPieces) {
+                const key = `${p.r},${p.c}`;
+                if (processedGroups.has(key)) continue;
+
+                const group = getConnectedGroup(p.r, p.c);
+                group.forEach(cell => processedGroups.add(`${cell.r},${cell.c}`));
+
+                if (countLiberties(group) === 0) {
+                    groupsToCapture.push(group);
+                }
+            }
+
+            // 1. 优先移除敌方被围棋子 (提子)
+            if (groupsToCapture.length > 0) {
+                for (const group of groupsToCapture) {
+                    for (const cell of group) {
+                        const p = grid[cell.r][cell.c];
+                        if (p && p.type !== 'yin' && p.type !== 'yang') {
+                            playerVitality[p.color] -= initialEnergyMap[p.type];
+                        }
+                        grid[cell.r][cell.c] = null;
+                    }
+                }
+                capturedAny = true;
+            }
+
+            // 2. 检查移动者是否自杀 (仅在没提掉对方子时，或者提完后依旧没气)
+            const myGroup = getConnectedGroup(movedR, movedC);
+            if (myGroup.length > 0 && countLiberties(myGroup) === 0) {
+                for (const cell of myGroup) {
+                    const p = grid[cell.r][cell.c];
+                    if (p && p.type !== 'yin' && p.type !== 'yang') {
+                        playerVitality[p.color] -= initialEnergyMap[p.type];
+                    }
+                    grid[cell.r][cell.c] = null;
+                }
+                capturedAny = true;
+            }
+            return capturedAny;
+        }
+
+        function executeMove(from, to) {
+            const piece = grid[from.r][from.c];
+            if (!piece) return;
+
+            // 计算攻击者实时内气
+            const attackerEnergy = calculateEnergy(from.r, from.c);
+
+            // 1. 攻击结算 (终点吃子)
+            const target = grid[to.r][to.c];
+            if (target) {
+                const defenderColor = target.color;
+                const defenderEnergy = calculateEnergy(to.r, to.c);
+
+                // 基础惩罚：仅当五行棋子失去时扣除玩家气值
+                if (target.type !== 'yin' && target.type !== 'yang') {
+                    playerVitality[defenderColor] -= initialEnergyMap[target.type];
+                }
+
+                // 差值伤害 (克制或同名)
+                if (OVERCOMES[piece.type] === target.type || piece.type === target.type) {
+                    if (attackerEnergy > defenderEnergy) {
+                        playerVitality[defenderColor] -= (attackerEnergy - defenderEnergy);
+                    } else if (piece.type === target.type && defenderEnergy > attackerEnergy) {
+                        playerVitality[piece.color] -= (defenderEnergy - attackerEnergy);
+                    }
+                }
+            }
+
+            // 执行物理位移
+            grid[to.r][to.c] = piece;
+            grid[from.r][from.c] = null;
+
+            // 2. 延迟结算包围提子
+            resolveCaptures(to.r, to.c, piece.color);
+
+            clearSelection();
+            switchTurn();
+        }
+
+        // --- 界面重构与交互 ---
+
+        function renderBoard() {
+            const boardEl = document.getElementById('board');
+            boardEl.innerHTML = '';
+            for (let r = 0; r < boardSize; r++) {
+                for (let c = 0; c < boardSize; c++) {
+                    const cell = document.createElement('div');
+                    cell.className = 'intersection';
+
+                    if (selectedPos && selectedPos.r === r && selectedPos.c === c) {
+                        cell.classList.add('selected');
+                    }
+
+                    if (selectedPos) {
+                        const p = grid[selectedPos.r][selectedPos.c];
+                        if (p && canMove(p, selectedPos, { r, c })) {
+                            cell.classList.add('valid-move');
+                            if (grid[r][c] && grid[r][c].color !== p.color) {
+                                cell.classList.add('capturable');
+                            }
+                        }
+                    }
+
+                    const piece = grid[r][c];
+                    if (piece) {
+                        const pieceEl = createPieceElement(piece, r, c);
+                        cell.appendChild(pieceEl);
+                    }
+
+                    cell.onclick = () => {
+                        if (selectedPos) {
+                            const selectedPiece = grid[selectedPos.r][selectedPos.c];
+                            if (canMove(selectedPiece, selectedPos, { r, c })) {
+                                executeMove(selectedPos, { r, c });
+                            } else {
+                                clearSelection();
+                            }
+                        } else {
+                            handleCellClick(r, c);
+                        }
+                        renderBoard();
+                    };
+                    boardEl.appendChild(cell);
+                }
+            }
+        }
+
+        function handleCellClick(r, c) {
+            if (!grid[r][c] && selectedReserve) {
+                // 【5+5配额检查】前10回合落子不能超过5次
+                if (roundCount <= 10) {
+                    if (playerActionCounts[currentPlayer].drop >= 5) {
+                        alert("前10回合落子配额已达5次，请执行棋子揭开。");
+                        return;
+                    }
+                }
+                const newPiece = {
+                    type: selectedReserve,
+                    color: selectedReserve === 'yin' ? 'black' : 'white',
+                    symbol: selectedReserve === 'yin' ? '☯' : '○',
+                    energy: initialEnergyMap[selectedReserve]
+                };
+                grid[r][c] = newPiece;
+                if (roundCount <= 10) {
+                    playerActionCounts[currentPlayer].drop++;
+                    console.log(`[Action] Dropped ${newPiece.type} at (${r},${c}) (Count: ${playerActionCounts[currentPlayer].drop}/5)`);
+                }
+                resolveCaptures(r, c, newPiece.color);
+                clearSelection();
+                switchTurn();
+            }
+        }
+
+        initData();
+        renderBoard();
+        renderReserves();
+    </script>
+</body>
+
+</html>

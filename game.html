@@ -1,0 +1,942 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+    <title>五行棋 - 互动版</title>
+    <style>
+        :root {
+            --board-bg: #e6b971;
+            --line-color: #5d4037;
+            --highlight-color: rgba(255, 255, 255, 0.5);
+            --valid-move-color: rgba(76, 175, 80, 0.4);
+        }
+
+        body {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            margin: 0;
+            background-color: #2c3e50;
+            font-family: "Noto Serif CJK SC", serif;
+            color: white;
+        }
+
+        h1 {
+            margin-bottom: 20px;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+        }
+
+        #game-container {
+            position: relative;
+            background-color: var(--board-bg);
+            padding: 40px;
+            border-radius: 8px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.8), inset 0 0 100px rgba(0, 0, 0, 0.1);
+            border: 4px solid var(--line-color);
+        }
+
+        /* 交叉点点击区域。棋盘尺寸7x7, 单元格原本是60x60。为了让棋子落在交点上，我们将 grid 视为交点本身，
+           这里我们把 intersection 设置为以交点为中心的点击框 */
+        .intersection {
+            width: 60px;
+            height: 60px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            position: relative;
+            z-index: 10;
+        }
+
+        /* 将交叉点整体向左上平移 30px（半个格子的宽度），这样网格线的左上角 (top:30, left:30) 恰好穿过第一行第一列的交点中心 */
+        #board {
+            display: grid;
+            grid-template-columns: repeat(9, 60px);
+            grid-template-rows: repeat(9, 60px);
+            position: relative;
+            margin-top: -30px;
+            margin-left: -30px;
+        }
+
+        /* 背景网格线。让它们基于容器绝对定位，正好穿过平移后的 board 交点 */
+        .board-lines-h,
+        .board-lines-v {
+            position: absolute;
+            top: 30px;
+            left: 30px;
+            pointer-events: none;
+        }
+
+        .line {
+            background-color: var(--line-color);
+            position: absolute;
+        }
+
+        .line-h {
+            height: 2px;
+            width: 480px;
+        }
+
+        .line-v {
+            width: 2px;
+            height: 480px;
+        }
+
+        /* 交叉点点击区域 */
+        .intersection {
+            width: 60px;
+            height: 60px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            position: relative;
+            z-index: 10;
+        }
+
+        .intersection:hover::after {
+            content: '';
+            width: 20px;
+            height: 20px;
+            background-color: var(--highlight-color);
+            border-radius: 50%;
+        }
+
+        .intersection.selected::after {
+            content: '';
+            width: 50px;
+            height: 50px;
+            border: 2px dashed #ffeb3b;
+            border-radius: 50%;
+            position: absolute;
+            animation: rotate 4s linear infinite;
+        }
+
+        .intersection.valid-move::before {
+            content: '';
+            width: 15px;
+            height: 15px;
+            background-color: var(--valid-move-color);
+            border-radius: 50%;
+            position: absolute;
+        }
+
+        @keyframes rotate {
+            from {
+                transform: rotate(0deg);
+            }
+
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        /* 受到威胁可被捕获的目标背景光晕 (适当削弱，保持沉稳) */
+        .intersection.capturable::after {
+            content: '';
+            position: absolute;
+            width: 45px;
+            height: 45px;
+            background: rgba(255, 50, 50, 0.4);
+            border-radius: 50%;
+            pointer-events: none;
+            box-shadow: 0 0 10px rgba(255, 0, 0, 0.6);
+            z-index: 5;
+            animation: pulse-danger-moderate 1.2s infinite alternate;
+        }
+
+        /* 给处于危险的棋子本身套上一层淡淡的红框 */
+        .intersection.capturable .piece {
+            border-color: #ff5252 !important;
+            box-shadow: 0 0 15px rgba(255, 82, 82, 0.8) !important;
+        }
+
+        @keyframes pulse-danger-moderate {
+            0% {
+                transform: scale(0.95);
+                opacity: 0.6;
+            }
+
+            100% {
+                transform: scale(1.05);
+                opacity: 0.9;
+            }
+        }
+
+        /* 棋子式样 */
+        .piece {
+            width: 48px;
+            height: 48px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: 24px;
+            box-shadow: 2px 4px 6px rgba(0, 0, 0, 0.3);
+            user-select: none;
+            transition: transform 0.2s;
+            z-index: 20;
+        }
+
+        .piece:active {
+            transform: scale(0.9);
+        }
+
+        .piece.yin {
+            background: #000;
+            color: #fff;
+            border: 1px solid #333;
+        }
+
+        .piece.yang {
+            background: #fff;
+            color: #000;
+            border: 1px solid #ccc;
+            font-size: 30px;
+        }
+
+        /* 五行棋子不再使用杂乱的颜色背景，而是通过字体颜色和发光来区别五行属性 */
+        /* 通过复合选择器提升黑白背景的权重，确保能够覆盖任何残留配置 */
+        .piece.black {
+            background: linear-gradient(135deg, #444, #111) !important;
+            border: 2px solid #666 !important;
+            box-shadow: 2px 4px 6px rgba(0, 0, 0, 0.6), inset 0 0 10px rgba(255, 255, 255, 0.1) !important;
+        }
+
+        .piece.white {
+            background: linear-gradient(135deg, #fff, #ddd) !important;
+            border: 2px solid #999 !important;
+            box-shadow: 2px 4px 6px rgba(0, 0, 0, 0.3), inset 0 0 10px rgba(0, 0, 0, 0.05) !important;
+        }
+
+        .piece.metal {
+            color: #fbc02d;
+            text-shadow: 0 0 8px #fbc02d;
+            font-weight: bold;
+        }
+
+        .piece.wood {
+            color: #8bc34a;
+            text-shadow: 0 0 8px #8bc34a;
+            font-weight: bold;
+        }
+
+        .piece.water {
+            color: #4fc3f7;
+            text-shadow: 0 0 8px #4fc3f7;
+            font-weight: bold;
+        }
+
+        .piece.fire {
+            color: #ff7043;
+            text-shadow: 0 0 8px #ff7043;
+            font-weight: bold;
+        }
+
+        .piece.earth {
+            color: #8d6e63;
+            text-shadow: 0 0 8px #8d6e63;
+            font-weight: bold;
+        }
+
+        .piece.white {
+            background: linear-gradient(135deg, #fff, #ddd);
+            border: 2px solid #ccc;
+            box-shadow: 2px 4px 6px rgba(0, 0, 0, 0.3), inset 0 0 10px rgba(0, 0, 0, 0.05);
+        }
+
+        /* 阴阳保留纯色特例 */
+        .piece.yin {
+            background: #000;
+            color: #fff;
+            border: 2px solid #555;
+            text-shadow: none;
+        }
+
+        .piece.yang {
+            background: #fff;
+            color: #000;
+            border: 2px solid #ccc;
+            font-size: 30px;
+            text-shadow: none;
+        }
+
+        /* 迷雾隐匿样式 */
+        .piece.hidden {
+            background: repeating-linear-gradient(45deg, #606060, #606060 10px, #505050 10px, #505050 20px) !important;
+            color: #aaa !important;
+            text-shadow: none !important;
+            border: 2px dashed #888 !important;
+            cursor: help;
+        }
+
+        .piece.hidden .piece-energy {
+            display: none;
+        }
+
+        #turn-indicator {
+            margin-top: 10px;
+            font-size: 24px;
+            font-weight: bold;
+            padding: 10px 30px;
+            border-radius: 8px;
+            transition: all 0.3s ease;
+        }
+
+        .turn-black {
+            background-color: #222;
+            color: #fff;
+            box-shadow: 0 0 15px rgba(0, 0, 0, 0.5);
+        }
+
+        .turn-white {
+            background-color: #eee;
+            color: #111;
+            box-shadow: 0 0 15px rgba(255, 255, 255, 0.5);
+        }
+
+        #info {
+            margin-top: 15px;
+            font-size: 16px;
+            background: rgba(0, 0, 0, 0.5);
+            padding: 8px 16px;
+            border-radius: 20px;
+            color: #bbb;
+        }
+
+        /* 外部手牌存储区样式 */
+        #reserve-container {
+            margin-top: 30px;
+            display: flex;
+            gap: 40px;
+            justify-content: center;
+        }
+
+        .reserve-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            cursor: pointer;
+            padding: 15px;
+            border-radius: 12px;
+            border: 3px solid transparent;
+            transition: all 0.2s;
+            background: rgba(255, 255, 255, 0.05);
+        }
+
+        .reserve-item:hover {
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        .reserve-item.selected {
+            border-color: #ffeb3b;
+            background: rgba(255, 235, 59, 0.2);
+            transform: scale(1.1);
+        }
+
+        .reserve-item .piece {
+            position: static;
+            cursor: pointer;
+            box-shadow: none;
+        }
+
+        #game-messages {
+            margin-top: 15px;
+            font-size: 1.1rem;
+            color: #ffca28;
+            font-weight: bold;
+        }
+
+        #round-info {
+            background: rgba(0, 0, 0, 0.4);
+            padding: 8px 16px;
+            border-radius: 20px;
+            margin-bottom: 15px;
+            font-size: 1.2rem;
+            border: 1px solid #ffca28;
+            color: #ffca28;
+            letter-spacing: 1px;
+        }
+
+        /* --- 内外气新样式 --- */
+        #vitality-panel {
+            display: flex;
+            gap: 60px;
+            margin-bottom: 20px;
+            background: rgba(0, 0, 0, 0.4);
+            padding: 15px 40px;
+            border-radius: 50px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .vitality-item {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .vitality-label {
+            font-size: 18px;
+            color: #ccc;
+        }
+
+        .vitality-value {
+            font-size: 28px;
+            font-family: 'Orbitron', sans-serif;
+            /* 假设有这种科技感字体，没有也无妨 */
+            color: #ffeb3b;
+            text-shadow: 0 0 10px rgba(255, 235, 59, 0.5);
+            min-width: 40px;
+            text-align: center;
+        }
+
+        /* 棋子内气标签 */
+        .piece-energy {
+            position: absolute;
+            bottom: -8px;
+            right: -8px;
+            background: #1b5e20;
+            color: #fff;
+            font-size: 12px;
+            width: 18px;
+            height: 18px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+            border: 1px solid #4caf50;
+            box-shadow: 0 0 5px rgba(0, 255, 0, 0.5);
+            z-index: 30;
+            font-family: Arial, sans-serif;
+            pointer-events: none;
+        }
+
+        .piece.white .piece-energy {
+            background: #b71c1c;
+            border-color: #f44336;
+            box-shadow: 0 0 5px rgba(255, 0, 0, 0.5);
+        }
+    </style>
+</head>
+
+<body>
+    <h1>五行棋</h1>
+
+    <div id="round-info">第 <span id="round-num">1</span> 回合</div>
+
+    <!-- 网络对战控制面板 -->
+    <div id="network-panel"
+        style="background: rgba(0,0,0,0.6); padding: 15px; border-radius: 10px; margin-bottom: 20px; border: 1px solid #ffca28;">
+        <div>
+            房间号: <input type="text" id="room-input" value="123"
+                style="width: 60px; background: #333; color: #fff; border: 1px solid #555;">
+            角色:
+            <select id="role-select" style="background: #333; color: #fff; border: 1px solid #555;">
+                <option value="black">黑方 (先手)</option>
+                <option value="white">白方</option>
+            </select>
+            <button onclick="joinRoom()"
+                style="padding: 5px 15px; background: #ffca28; color: #000; border: none; border-radius: 4px; cursor: pointer; font-weight: bold;">加入对战</button>
+            <span id="conn-status" style="margin-left: 10px; color: #ff5252;">未连接</span>
+        </div>
+    </div>
+
+    <div id="vitality-panel">
+        <div class="vitality-item">
+            <span class="vitality-label">黑方气 (☯)</span>
+            <span id="vitality-black" class="vitality-value">20</span>
+        </div>
+        <div class="vitality-item">
+            <span class="vitality-label">白方气 (○)</span>
+            <span id="vitality-white" class="vitality-value">20</span>
+        </div>
+    </div>
+
+    <div id="turn-indicator" class="turn-black">当前回合：黑方</div>
+
+    <div id="game-container">
+        <!-- 装饰线 -->
+        <div class="board-lines-h">
+            <div class="line line-h" style="top: 0px"></div>
+            <div class="line line-h" style="top: 60px"></div>
+            <div class="line line-h" style="top: 120px"></div>
+            <div class="line line-h" style="top: 180px"></div>
+            <div class="line line-h" style="top: 240px"></div>
+            <div class="line line-h" style="top: 300px"></div>
+            <div class="line line-h" style="top: 360px"></div>
+            <div class="line line-h" style="top: 420px"></div>
+            <div class="line line-h" style="top: 480px"></div>
+        </div>
+        <div class="board-lines-v">
+            <div class="line line-v" style="left: 0px"></div>
+            <div class="line line-v" style="left: 60px"></div>
+            <div class="line line-v" style="left: 120px"></div>
+            <div class="line line-v" style="left: 180px"></div>
+            <div class="line line-v" style="left: 240px"></div>
+            <div class="line line-v" style="left: 300px"></div>
+            <div class="line line-v" style="left: 360px"></div>
+            <div class="line line-v" style="left: 420px"></div>
+            <div class="line line-v" style="left: 480px"></div>
+        </div>
+
+        <div id="board"></div>
+    </div>
+
+    <div id="info">点击选择五行棋子移动，或选择下方阴阳棋子落子卡位</div>
+
+    <div id="reserve-container">
+        <div id="reserve-yin" class="reserve-item" onclick="selectReserve('yin')">
+            <div class="piece yin">☯</div>
+            <div class="reserve-label">阴棋 (黑方)</div>
+        </div>
+        <div id="reserve-yang" class="reserve-item" onclick="selectReserve('yang')">
+            <div class="piece yang">○</div>
+            <div class="reserve-label">阳棋 (白方)</div>
+        </div>
+    </div>
+
+    <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
+    <script>
+        // 网络通信部分
+        let socket = null;
+        let myRoom = null;
+        let myRole = null; // 'black' or 'white'
+
+        function joinRoom() {
+            const roomInput = document.getElementById('room-input').value;
+            const roleSelect = document.getElementById('role-select').value;
+
+            if (!roomInput) return alert("请输入房间号");
+
+            if (!socket) {
+                const serverHost = window.location.hostname || 'localhost';
+                console.log("Connecting to server:", serverHost);
+                socket = io('http://' + serverHost + ':5000');
+
+                socket.on('connect', () => {
+                    document.getElementById('conn-status').textContent = "已连接服务器";
+                    document.getElementById('conn-status').style.color = "#4caf50";
+
+                    socket.emit('join_room', { room_id: roomInput, player_type: roleSelect }, (response) => {
+                        if (response.status === 'success') {
+                            myRoom = roomInput;
+                            myRole = roleSelect;
+                            alert(`成功加入房间 ${myRoom}，你是 ${myRole === 'black' ? '黑方' : '白方'}。等待对手...`);
+                            // 注意：不再在这里调用 initData()，统一听从服务端的 init_game 指令
+                        } else {
+                            alert("加入失败: " + response.message);
+                        }
+                    });
+                });
+
+                socket.on('connect_error', (err) => {
+                    console.error("Connection Error:", err);
+                    document.getElementById('conn-status').textContent = "连接失败，请检查服务器是否开启";
+                    document.getElementById('conn-status').style.color = "#f44336";
+                });
+
+                socket.on('init_game', (data) => {
+                    console.log("RECEIVED SERVER INIT:", data);
+                    syncInitData(data);
+                    renderBoard();
+                    alert("双人就绪，统一棋盘已生成，开始对战！");
+                });
+
+                socket.on('sync_action', (data) => {
+                    handleRemoteAction(data);
+                });
+
+                socket.on('player_disconnected', () => {
+                    alert("对手已断开连接，你可以刷新页面重新开局。");
+                });
+            } else {
+                // 如果已经连接但想加入新房间
+                socket.emit('join_room', { room_id: roomInput, player_type: roleSelect }, (response) => {
+                    if (response.status === 'success') {
+                        myRoom = roomInput;
+                        myRole = roleSelect;
+                        alert(`切换房间成功：${myRoom}`);
+                    } else {
+                        alert("切换失败: " + response.message);
+                    }
+                });
+            }
+        }
+
+        function sendActionToServer(type, payload) {
+            if (!socket || !myRoom) {
+                // 本机模式（如果不联网也能玩，可以保留本地逻辑，但目前我们要强推联网测试）
+                console.log("Local mode action");
+                return false;
+            }
+            socket.emit('action', {
+                room_id: myRoom,
+                action_type: type,
+                payload: payload
+            });
+            return true;
+        }
+
+        function handleRemoteAction(data) {
+            const { action_type, payload } = data;
+            console.log("Receiving Sync Action:", action_type, payload);
+            try {
+                if (action_type === 'drop') {
+                    const { r, c, type, color } = payload;
+                    grid[r][c] = { type, color, symbol: getSymbolByType(type), isRevealed: true };
+                    playerActionCounts[color].drop++;
+                    resolveCaptures(r, c, color);
+                } else if (action_type === 'move') {
+                    const { from, to } = payload;
+                    const piece = grid[from.r][from.c];
+                    if (piece) {
+                        grid[to.r][to.c] = piece;
+                        grid[from.r][from.c] = null;
+                        resolveCaptures(to.r, to.c, piece.color);
+                    }
+                } else if (action_type === 'reveal') {
+                    const { r, c, mover_color } = payload;
+                    if (grid[r][c]) {
+                        grid[r][c].isRevealed = true;
+                        playerActionCounts[mover_color].reveal++;
+                        resolveCaptures(r, c, mover_color);
+                    }
+                }
+                switchTurn();
+            } catch (err) {
+                console.error("Sync Action Process Error:", err);
+            }
+        }
+
+        function getSymbolByType(type) {
+            const symbols = { 'metal': '金', 'wood': '木', 'water': '水', 'fire': '火', 'earth': '土', 'yin': '☯', 'yang': '○' };
+            return symbols[type];
+        }
+
+        function syncInitData(data) {
+            const { black_positions, white_positions, templates } = data;
+            grid = Array(boardSize).fill(null).map(() => Array(boardSize).fill(null));
+            black_positions.forEach((col, i) => {
+                const type = templates[i];
+                grid[0][col] = { type, color: 'black', symbol: getSymbolByType(type), isRevealed: false };
+            });
+            white_positions.forEach((col, i) => {
+                const type = templates[i];
+                grid[8][col] = { type, color: 'white', symbol: getSymbolByType(type), isRevealed: false };
+            });
+            playerActionCounts = { black: { reveal: 0, drop: 0 }, white: { reveal: 0, drop: 0 } };
+            roundCount = 1;
+            currentPlayer = 'black';
+            playerVitality = { black: 20, white: 20 };
+            updateVitalityDisplay();
+        }
+
+        const boardSize = 9;
+        let grid = Array(boardSize).fill(null).map(() => Array(boardSize).fill(null));
+        let selectedPos = null;
+        let selectedReserve = null;
+        let currentPlayer = 'black';
+        let roundCount = 1;
+        let playerVitality = { black: 20, white: 20 };
+        let playerActionCounts = { black: { reveal: 0, drop: 0 }, white: { reveal: 0, drop: 0 } };
+        const initialEnergyMap = { metal: 3, wood: 4, water: 5, fire: 3, earth: 4, yin: 1, yang: 1 };
+        const GENERA = { wood: 'fire', fire: 'earth', earth: 'metal', metal: 'water', water: 'wood' };
+        const OVERCOMES = { wood: 'earth', earth: 'water', water: 'fire', fire: 'metal', metal: 'wood' };
+
+        function updateVitalityDisplay() {
+            document.getElementById('vitality-black').textContent = playerVitality.black;
+            document.getElementById('vitality-white').textContent = playerVitality.white;
+        }
+
+        function switchTurn() {
+            if (currentPlayer === 'white') {
+                roundCount++;
+                document.getElementById('round-num').textContent = roundCount;
+            }
+            currentPlayer = currentPlayer === 'black' ? 'white' : 'black';
+            const indicator = document.getElementById('turn-indicator');
+            indicator.className = currentPlayer === 'black' ? 'turn-black' : 'turn-white';
+            indicator.textContent = `当前行动：${currentPlayer === 'black' ? '黑方 (阴)' : '白方 (阳)'}`;
+            checkGameOver();
+            clearSelection();
+            updateVitalityDisplay();
+            renderBoard();
+        }
+
+        function checkGameOver() {
+            if (playerVitality.black < 10) { alert("游戏结束！白方获胜"); location.reload(); }
+            else if (playerVitality.white < 10) { alert("游戏结束！黑方获胜"); location.reload(); }
+        }
+
+        function getPathPoints(r1, c1, r2, c2) {
+            const points = [];
+            const steps = Math.max(Math.abs(r2 - r1), Math.abs(c2 - c1));
+            if (steps <= 1) return points;
+            const step_r = (r2 - r1) / steps;
+            const step_c = (c2 - c1) / steps;
+            for (let i = 1; i < steps; i++) { points.push({ r: r1 + i * step_r, c: c1 + i * step_c }); }
+            return points;
+        }
+
+        function isPathClear(points) {
+            for (const p of points) { if (grid[p.r][p.c] !== null) return false; }
+            return true;
+        }
+
+        function calculateEnergy(r, c) {
+            const p = grid[r][c];
+            if (!p) return 0;
+            const init = initialEnergyMap[p.type];
+            // 阴阳棋子内气恒定，不参与 Aura 计算
+            if (p.type === 'yin' || p.type === 'yang') return init;
+
+            if (!p.isRevealed) return init;
+            let delta = 0;
+            const dirs = [{ r: -1, c: 0 }, { r: 1, c: 0 }, { r: 0, c: -1 }, { r: 0, c: 1 }];
+            for (let d of dirs) {
+                const nr = r + d.r, nc = c + d.c;
+                if (nr >= 0 && nr < boardSize && nc >= 0 && nc < boardSize) {
+                    const nb = grid[nr][nc];
+                    if (!nb) continue;
+                    if (nb.type === 'yin' || nb.type === 'yang') {
+                        if (nb.color === p.color) delta += 1; else delta -= 1;
+                    } else if (nb.isRevealed) {
+                        if (nb.color === p.color && GENERA[nb.type] === p.type) delta += 1;
+                        else if (nb.color !== p.color && OVERCOMES[nb.type] === p.type) delta -= 1;
+                    }
+                }
+            }
+            return Math.max(init - 4, Math.min(init + 4, init + delta));
+        }
+
+        function canMove(p, from, to) {
+            if (p.type !== 'yin' && p.type !== 'yang') {
+                const currentEnergy = calculateEnergy(from.r, from.c);
+                const threshold = (p.type === 'water') ? 2 : 1;
+                if (currentEnergy <= threshold) return false;
+            }
+            const dx = Math.abs(to.c - from.c), dy = Math.abs(to.r - from.r);
+            if (dx === 0 && dy === 0) return false;
+            const target = grid[to.r][to.c];
+            if (target) {
+                if (target.color === p.color) return false;
+                if (!target.isRevealed && target.type !== 'yin' && target.type !== 'yang') return false;
+                if (GENERA[target.type] === p.type && calculateEnergy(from.r, from.c) < initialEnergyMap[p.type]) return false;
+            }
+            const r1 = from.r, c1 = from.c, r2 = to.r, c2 = to.c;
+            switch (p.type) {
+                case 'metal': return ((dx === 0 || dy === 0) && Math.max(dx, dy) <= 3 && isPathClear(getPathPoints(r1, c1, r2, c2)));
+                case 'wood': if (dx > 0 && dy > 0 && (dx + dy) <= 3) {
+                    const cornerA = { r: r1, c: c2 }, cornerB = { r: r2, c: c1 };
+                    if (grid[cornerA.r][cornerA.c] === null && isPathClear(getPathPoints(r1, c1, cornerA.r, cornerA.c)) && isPathClear(getPathPoints(cornerA.r, cornerA.c, r2, c2))) return true;
+                    if (grid[cornerB.r][cornerB.c] === null && isPathClear(getPathPoints(r1, c1, cornerB.r, cornerB.c)) && isPathClear(getPathPoints(cornerB.r, cornerB.c, r2, c2))) return true;
+                } return false;
+                case 'water': for (let cr = 0; cr < boardSize; cr++) {
+                    for (let cc = 0; cc < boardSize; cc++) {
+                        const dx1 = Math.abs(cr - r1), dy1 = Math.abs(cc - c1), dx2 = Math.abs(r2 - cr), dy2 = Math.abs(c2 - cc);
+                        if (((dx1 + dy1 === 1 && dx2 === 1 && dy2 === 1) || (dx1 === 1 && dy1 === 1 && dx2 + dy2 === 1) || (dx1 === 1 && dy1 === 1 && dx2 === 1 && dy2 === 1)) && (cr - r1) * (c2 - cc) !== (cc - c1) * (r2 - cr) && grid[cr][cc] === null) return true;
+                    }
+                } return false;
+                case 'fire': if (dx === 0 || dy === 0) { const dist = Math.max(dx, dy); if (dist === 1) return true; if (dist >= 2 && dist <= 3) { let cnt = 0; for (let pt of getPathPoints(r1, c1, r2, c2)) { if (grid[pt.r][pt.c]) cnt++; } return cnt === 1; } } return false;
+                case 'earth': return (dx > 0 && dx === dy && dx <= 2 && isPathClear(getPathPoints(r1, c1, r2, c2)));
+                case 'yin': case 'yang': return (dx + dy === 1 && target === null);
+                default: return false;
+            }
+        }
+
+        function clearSelection() { selectedPos = null; selectedReserve = null; renderReserves(); }
+        function selectReserve(type) {
+            const requiredColor = type === 'yin' ? 'black' : 'white';
+            if (requiredColor !== currentPlayer || (myRoom && currentPlayer !== myRole)) return;
+            if (selectedReserve === type) { selectedReserve = null; renderReserves(); return; }
+            clearSelection(); selectedReserve = type; renderReserves();
+        }
+        function renderReserves() {
+            document.getElementById('reserve-yin').classList.toggle('selected', selectedReserve === 'yin');
+            document.getElementById('reserve-yang').classList.toggle('selected', selectedReserve === 'yang');
+        }
+
+        function selectIntersection(r, c) {
+            if (myRoom && currentPlayer !== myRole) { console.log("Not your turn!"); return; }
+            const target = grid[r][c];
+            if (selectedReserve) {
+                if (target !== null) return;
+                if (roundCount <= 10) {
+                    if (playerActionCounts[currentPlayer].drop >= 5) { alert("落子配额已满！"); return; }
+                    // 【中线限制】
+                    if (currentPlayer === 'black' && r > 4) { alert("前10回合落子不能超过中线！"); return; }
+                    if (currentPlayer === 'white' && r < 4) { alert("前10回合落子不能超过中线！"); return; }
+                }
+                const act = { r, c, type: selectedReserve, color: currentPlayer };
+                if (sendActionToServer('drop', act)) return;
+                grid[r][c] = { type: selectedReserve, color: currentPlayer, symbol: getSymbolByType(selectedReserve), isRevealed: true };
+                playerActionCounts[currentPlayer].drop++; resolveCaptures(r, c, currentPlayer); switchTurn();
+                return;
+            }
+            if (target && !target.isRevealed && target.type !== 'yin' && target.type !== 'yang') {
+                if (target.color !== currentPlayer) return;
+                if (roundCount <= 10 && playerActionCounts[currentPlayer].reveal >= 5) { alert("揭开配额已满！"); return; }
+                const act = { r, c, mover_color: currentPlayer };
+                if (sendActionToServer('reveal', act)) return;
+                target.isRevealed = true; playerActionCounts[currentPlayer].reveal++; resolveCaptures(r, c, currentPlayer); switchTurn();
+                return;
+            }
+            if (selectedPos) {
+                const p = grid[selectedPos.r][selectedPos.c];
+                if (canMove(p, selectedPos, { r, c })) {
+                    if (target && target.color === currentPlayer) { selectedPos = { r, c }; renderBoard(); return; }
+                    if (sendActionToServer('move', { from: selectedPos, to: { r, c } })) return;
+                    executeMove(selectedPos, { r, c });
+                } else if (target && target.color === currentPlayer && target.isRevealed) { selectedPos = { r, c }; renderBoard(); }
+                else { clearSelection(); renderBoard(); }
+            } else if (target && target.color === currentPlayer && target.isRevealed) {
+                if (roundCount <= 10) return;
+                selectedPos = { r, c }; renderBoard();
+            }
+        }
+
+        function renderBoard() {
+            const boardEl = document.getElementById('board');
+            boardEl.innerHTML = '';
+            for (let r = 0; r < boardSize; r++) {
+                for (let c = 0; c < boardSize; c++) {
+                    const cell = document.createElement('div');
+                    cell.className = 'intersection';
+                    if (selectedPos && selectedPos.r === r && selectedPos.c === c) cell.classList.add('selected');
+                    if (selectedPos && canMove(grid[selectedPos.r][selectedPos.c], selectedPos, { r, c })) {
+                        cell.classList.add('valid-move');
+                        if (grid[r][c] && grid[r][c].color !== grid[selectedPos.r][selectedPos.c].color) {
+                            cell.classList.add('capturable');
+                        }
+                    }
+                    const p = grid[r][c];
+                    if (p) cell.appendChild(createPieceElement(p, r, c));
+                    cell.onclick = () => selectIntersection(r, c);
+                    boardEl.appendChild(cell);
+                }
+            }
+        }
+
+        function createPieceElement(pData, r, c) {
+            const el = document.createElement('div');
+            const isH = (pData.type !== 'yin' && pData.type !== 'yang' && !pData.isRevealed);
+            el.className = `piece ${isH ? 'hidden' : pData.type} ${pData.color}`;
+            el.textContent = isH ? '?' : pData.symbol;
+            if (!isH) {
+                const en = document.createElement('div'); en.className = 'piece-energy';
+                en.textContent = calculateEnergy(r, c); el.appendChild(en);
+            }
+            el.onclick = (e) => { e.stopPropagation(); selectIntersection(r, c); };
+            return el;
+        }
+
+        function resolveCaptures(movedR, movedC, moverColor) {
+            const opp = moverColor === 'black' ? 'white' : 'black';
+            let changed = false;
+            for (let r = 0; r < boardSize; r++) {
+                for (let c = 0; c < boardSize; c++) {
+                    const p = grid[r][c];
+                    if (p && p.color === opp && (p.isRevealed || p.type === 'yin' || p.type === 'yang')) {
+                        const g = getConnectedGroup(r, c);
+                        if (countLiberties(g) === 0) {
+                            g.forEach(cell => {
+                                const target = grid[cell.r][cell.c];
+                                if (target && target.type !== 'yin' && target.type !== 'yang') playerVitality[target.color] -= initialEnergyMap[target.type];
+                                grid[cell.r][cell.c] = null;
+                            });
+                            changed = true;
+                        }
+                    }
+                }
+            }
+            const myG = getConnectedGroup(movedR, movedC);
+            if (myG.length > 0 && countLiberties(myG) === 0) {
+                myG.forEach(cell => {
+                    const target = grid[cell.r][cell.c];
+                    if (target && target.type !== 'yin' && target.type !== 'yang') playerVitality[target.color] -= initialEnergyMap[target.type];
+                    grid[cell.r][cell.c] = null;
+                });
+                changed = true;
+            }
+            return changed;
+        }
+
+        function getConnectedGroup(r, c) {
+            const group = [], visited = new Set(), queue = [{ r, c }], p = grid[r][c];
+            if (!p) return group;
+            const color = p.color;
+            while (queue.length > 0) {
+                const curr = queue.shift(); const key = `${curr.r},${curr.c}`;
+                if (visited.has(key)) continue; visited.add(key); group.push(curr);
+                for (const d of [[-1, 0], [1, 0], [0, -1], [0, 1]]) {
+                    const nr = curr.r + d[0], nc = curr.c + d[1];
+                    if (nr >= 0 && nr < boardSize && nc >= 0 && nc < boardSize) {
+                        const nb = grid[nr][nc];
+                        if (nb && nb.color === color && (nb.isRevealed || nb.type === 'yin' || nb.type === 'yang')) {
+                            if (!visited.has(`${nr},${nc}`)) queue.push({ r: nr, c: nc });
+                        }
+                    }
+                }
+            }
+            return group;
+        }
+
+        function countLiberties(group) {
+            const libs = new Set(), checkedH = new Set(), queue = [];
+            group.forEach(c => [[-1, 0], [1, 0], [0, -1], [0, 1]].forEach(d => queue.push({ r: c.r + d[0], c: c.c + d[1] })));
+            while (queue.length > 0) {
+                const { r, c } = queue.shift(); if (r < 0 || r >= boardSize || c < 0 || c >= boardSize) continue;
+                const t = grid[r][c];
+                if (t === null) libs.add(`${r},${c}`);
+                else if (!t.isRevealed && t.type !== 'yin' && t.type !== 'yang') {
+                    libs.add(`${r},${c}`); if (!checkedH.has(`${r},${c}`)) {
+                        checkedH.add(`${r},${c}`);[[-1, 0], [1, 0], [0, -1], [0, 1]].forEach(d => queue.push({ r: r + d[0], c: c + d[1] }));
+                    }
+                }
+            }
+            return libs.size;
+        }
+
+        function executeMove(from, to) {
+            const p = grid[from.r][from.c]; if (!p) return;
+            const aE = calculateEnergy(from.r, from.c), t = grid[to.r][to.c];
+            if (t) {
+                const dC = t.color, dE = calculateEnergy(to.r, to.c);
+                if (t.type !== 'yin' && t.type !== 'yang') playerVitality[dC] -= initialEnergyMap[t.type];
+                if (OVERCOMES[p.type] === t.type || p.type === t.type) {
+                    if (aE > dE) playerVitality[dC] -= (aE - dE);
+                    else if (p.type === t.type && dE > aE) playerVitality[p.color] -= (dE - aE);
+                }
+            }
+            grid[to.r][to.c] = p; grid[from.r][from.c] = null; resolveCaptures(to.r, to.c, p.color);
+            clearSelection(); switchTurn();
+        }
+
+        function initData() {
+            if (myRoom && socket) {
+                grid = Array(boardSize).fill(null).map(() => Array(boardSize).fill(null));
+                playerActionCounts = { black: { reveal: 0, drop: 0 }, white: { reveal: 0, drop: 0 } };
+                updateVitalityDisplay(); return;
+            }
+            grid = Array(boardSize).fill(null).map(() => Array(boardSize).fill(null));
+            const shuffle = (a) => { for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1));[a[i], a[j]] = [a[j], a[i]]; } return a; };
+            const bC = shuffle([0, 1, 2, 3, 4, 5, 6, 7, 8]).slice(0, 5), wC = shuffle([0, 1, 2, 3, 4, 5, 6, 7, 8]).slice(0, 5);
+            const tmpl = [{ type: 'metal', s: '金' }, { type: 'wood', s: '木' }, { type: 'water', s: '水' }, { type: 'fire', s: '火' }, { type: 'earth', s: '土' }];
+            tmpl.forEach((p, i) => {
+                grid[0][bC[i]] = { type: p.type, color: 'black', symbol: p.s, isRevealed: false };
+                grid[8][wC[i]] = { type: p.type, color: 'white', symbol: p.s, isRevealed: false };
+            });
+            updateVitalityDisplay();
+        }
+
+        initData();
+        renderBoard();
+        updateVitalityDisplay();
+    </script>
+</body>
+
+</html>

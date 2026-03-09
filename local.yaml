@@ -1,0 +1,167 @@
+port: 7890
+socks-port: 7891
+mixed-port: 7897
+allow-lan: true
+mode: rule
+log-level: info
+external-controller: :9090
+ipv6: false
+bind-address: 0.0.0.0
+
+sniffer:
+  enable: true
+  skip-domain:
+    - "imap.gmail.com"
+    - "smtp.gmail.com"
+
+dns:
+  enable: true
+  ipv6: false
+  enhanced-mode: fake-ip
+  fake-ip-range: 198.18.0.1/16
+  fake-ip-filter:
+    - '*.lan'
+    - '*.local'
+    - '*.localhost'
+    - 'localhost'
+    - localhost.ptlogin2.qq.com
+    - '+.docker.internal'
+    - '*.sfx.ms'
+    - '*.microsoft.com'
+    - '*.microsoftonline.com'
+    - '*.windows.net'
+    - '*.live.com'
+    - '*.office.com'
+    - '*.office365.com'
+    - '*.onedrive.com'
+    - '*.sharepoint.com'
+    - 'stun.*'
+    - 'stun.*.*'
+    - 'stun.*.*.*'
+    - '+.amazonaws.com'
+    - '+.sentry.io'
+    - '+.npmmirror.com'
+    - '+.taobao.org'
+    - '+.anthropic.com'
+    - '+.claude.ai'
+    - '+.openai.com'
+  nameserver:
+    - https://doh.pub/dns-query
+    - https://dns.alidns.com/dns-query
+  fallback:
+    - https://1.1.1.1/dns-query
+    - https://dns.google/dns-query
+  fallback-filter:
+    geoip: true
+    geoip-code: CN
+
+proxies:
+  - name: JP-HY2
+    type: hysteria2
+    server: 82.40.43.13
+    port: 443
+    password: fr8v5tXliWcbX3cfDRBH
+    sni: bing.com
+    skip-cert-verify: true
+    udp: true
+
+  - name: 静态住宅代理
+    type: socks5
+    server: 66.80.103.227
+    port: 5782
+    username: dal76ltx
+    password: QHSKmGDVkUJE
+    dialer-proxy: JP-HY2
+    udp: true
+
+proxy-groups:
+  - name: 🚀 节点选择
+    type: select
+    proxies:
+      - JP-HY2
+      - 静态住宅代理
+      - DIRECT
+
+  - name: 🤖 AI 服务
+    type: select
+    proxies:
+      - 静态住宅代理
+      - JP-HY2
+      - DIRECT
+
+  - name: 💻 开发工具
+    type: select
+    proxies:
+      - JP-HY2
+      - 静态住宅代理
+      - DIRECT
+
+rules:
+  - DOMAIN-SUFFIX,localhost,DIRECT
+  - DOMAIN-SUFFIX,local,DIRECT
+  - DOMAIN-SUFFIX,lan,DIRECT
+  - DOMAIN-KEYWORD,localhost,DIRECT
+  - DOMAIN,host.docker.internal,DIRECT
+  - DOMAIN,gateway.docker.internal,DIRECT
+  - DOMAIN,kubernetes.docker.internal,DIRECT
+  - DOMAIN,docker.localhost,DIRECT
+
+  - PROCESS-NAME,java.exe,DIRECT
+  - PROCESS-NAME,javaw.exe,DIRECT
+  - PROCESS-NAME,node.exe,DIRECT
+  - PROCESS-NAME,claude.exe,DIRECT
+
+  - PROCESS-NAME,Docker Desktop.exe,🤖 AI 服务
+  - PROCESS-NAME,docker.exe,🤖 AI 服务
+  - PROCESS-NAME,com.docker.backend.exe,🤖 AI 服务
+  - PROCESS-NAME,com.docker.build.exe,🤖 AI 服务
+  - PROCESS-NAME,com.docker.service.exe,🤖 AI 服务
+  - PROCESS-NAME,docker-sandbox.exe,🤖 AI 服务
+
+  - IP-CIDR,127.0.0.0/8,DIRECT,no-resolve
+  - IP-CIDR,10.0.0.0/8,DIRECT,no-resolve
+  - IP-CIDR,172.16.0.0/12,DIRECT,no-resolve
+  - IP-CIDR,192.168.0.0/16,DIRECT,no-resolve
+  - IP-CIDR,100.64.0.0/10,DIRECT,no-resolve
+  - IP-CIDR,169.254.0.0/16,DIRECT,no-resolve
+  - IP-CIDR6,::1/128,DIRECT,no-resolve
+  - IP-CIDR6,fc00::/7,DIRECT,no-resolve
+  - IP-CIDR6,fe80::/10,DIRECT,no-resolve
+  - IP-CIDR,81.69.37.254/32,DIRECT,no-resolve
+  - GEOIP,LAN,DIRECT
+
+  - DOMAIN-SUFFIX,openai.com,🤖 AI 服务
+  - DOMAIN-SUFFIX,ai.com,🤖 AI 服务
+  - DOMAIN-SUFFIX,chatgpt.com,🤖 AI 服务
+  - DOMAIN-SUFFIX,oaistatic.com,🤖 AI 服务
+  - DOMAIN-SUFFIX,oaiusercontent.com,🤖 AI 服务
+  - DOMAIN-SUFFIX,claude.ai,🤖 AI 服务
+  - DOMAIN-SUFFIX,anthropic.com,🤖 AI 服务
+  - DOMAIN-SUFFIX,bard.google.com,🤖 AI 服务
+  - DOMAIN-SUFFIX,gemini.google.com,🤖 AI 服务
+  - DOMAIN-SUFFIX,copilot.microsoft.com,🤖 AI 服务
+
+  - DOMAIN-SUFFIX,maven.org,💻 开发工具
+  - DOMAIN-SUFFIX,mvnrepository.com,💻 开发工具
+  - DOMAIN-SUFFIX,repo1.maven.org,💻 开发工具
+  - DOMAIN-SUFFIX,repo.maven.apache.org,💻 开发工具
+  - DOMAIN-SUFFIX,gradle.org,💻 开发工具
+  - DOMAIN-SUFFIX,plugins.gradle.org,💻 开发工具
+  - DOMAIN-SUFFIX,services.gradle.org,💻 开发工具
+  - DOMAIN-SUFFIX,npmjs.org,💻 开发工具
+  - DOMAIN-SUFFIX,npmjs.com,💻 开发工具
+  - DOMAIN-SUFFIX,registry.npmmirror.com,DIRECT
+  - DOMAIN-SUFFIX,yarnpkg.com,💻 开发工具
+  - DOMAIN-SUFFIX,pypi.org,💻 开发工具
+  - DOMAIN-SUFFIX,github.com,💻 开发工具
+  - DOMAIN-SUFFIX,githubusercontent.com,💻 开发工具
+  - DOMAIN-SUFFIX,github.io,💻 开发工具
+  - DOMAIN-SUFFIX,githubassets.com,💻 开发工具
+  - DOMAIN-SUFFIX,docker.io,💻 开发工具
+  - DOMAIN-SUFFIX,docker.com,💻 开发工具
+  - DOMAIN-SUFFIX,stackoverflow.com,💻 开发工具
+  - DOMAIN-SUFFIX,stackexchange.com,💻 开发工具
+
+  - GEOIP,CN,DIRECT
+  - GEOSITE,CN,DIRECT
+  - MATCH,🤖 AI 服务

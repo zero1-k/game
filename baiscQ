@@ -1,0 +1,102 @@
+class Piece:
+    """棋子基础类"""
+    def __init__(self, name, symbol, color):
+        self.name = name
+        self.symbol = symbol
+        self.color = color  # 'black' or 'white'
+
+    def can_move(self, start_pos, end_pos, board):
+        """定义棋子是否可以从 start_pos 移动到 end_pos"""
+        raise NotImplementedError("子类必须实现此方法")
+
+class YinYangPiece(Piece):
+    """阴阳棋子：只能落子，不可移动"""
+    def can_move(self, start_pos, end_pos, board):
+        # 阴阳棋子不可移动
+        return False
+
+class FiveElementsPiece(Piece):
+    """五行棋子：走子，不同类型走法不同"""
+    def __init__(self, name, symbol, color, element_type):
+        super().__init__(name, symbol, color)
+        self.element_type = element_type # 'metal', 'wood', 'water', 'fire', 'earth'
+
+    def can_move(self, start_pos, end_pos, board):
+        """后续将根据 element_type 定义不同的走法规则"""
+        # 暂且保留，待后续具体规则给出
+        return True
+
+class Board:
+    """7x7 棋盘类"""
+    def __init__(self, size=7):
+        self.size = size
+        self.grid = [[None for _ in range(size)] for _ in range(size)]
+
+    def place_piece(self, piece, pos):
+        x, y = pos
+        if 0 <= x < self.size and 0 <= y < self.size:
+            self.grid[x][y] = piece
+            return True
+        return False
+
+    def display(self):
+        """打印连续线条的围棋风格 7x7 棋盘"""
+        # ANSI 颜色
+        RESET = "\033[0m"
+        BOLD = "\033[1m"
+        FG_BOARD = "\033[38;2;160;120;60m"
+        FG_COORD = "\033[38;2;150;150;150m"
+        COLORS = {
+            'black': "\033[38;5;232m", 'white': "\033[38;5;255m",
+            'metal': "\033[38;5;251m", 'wood': "\033[38;5;34m",
+            'water': "\033[38;5;33m", 'fire': "\033[38;5;196m", 'earth': "\033[38;5;94m",
+        }
+        # 棋盘符号：使用单字符交点，水平线增广以对接
+        SYMBOLS = {
+            'top_left': '┌', 'top_right': '┐', 'bottom_left': '└', 'bottom_right': '┘',
+            'top': '┬', 'bottom': '┴', 'left': '├', 'right': '┤', 'cross': '┼',
+            'line_h': '──', 'line_v': '│'
+        }
+
+        def get_intersection_symbol(r, c):
+            if r == 0:
+                if c == 0: return SYMBOLS['top_left']
+                if c == self.size - 1: return SYMBOLS['top_right']
+                return SYMBOLS['top']
+            if r == self.size - 1:
+                if c == 0: return SYMBOLS['bottom_left']
+                if c == self.size - 1: return SYMBOLS['bottom_right']
+                return SYMBOLS['bottom']
+            if c == 0: return SYMBOLS['left']
+            if c == self.size - 1: return SYMBOLS['right']
+            return SYMBOLS['cross']
+
+        # 打印顶部坐标 (每个单元格由 1个交点 + 2个水平线 组成，共 3 字符宽)
+        coord_line = "    " + "  ".join([str(i) for i in range(self.size)])
+        print(f"\n{FG_COORD}{coord_line}{RESET}")
+
+        for r in range(self.size):
+            # 1. 打印带棋子的行
+            row_str = f"{FG_COORD} {r} {RESET}"
+            for c in range(self.size):
+                piece = self.grid[r][c]
+                if piece:
+                    # 棋子通常占用 2 个字符宽度
+                    p_color = COLORS.get(getattr(piece, 'element_type', piece.color), COLORS['white'])
+                    symbol = f"{p_color}{BOLD}{piece.symbol}{RESET}"
+                else:
+                    # 交叉点由于是 1 宽，补一个空格使其成为 2 宽，且避免与线断开
+                    symbol = f"{FG_BOARD}{get_intersection_symbol(r, c)}{RESET} "
+                
+                row_str += symbol
+                # 如果不是最后一列，添加水平连接线
+                if c < self.size - 1:
+                    row_str += f"{FG_BOARD}{SYMBOLS['line_h']}{RESET}"
+            print(row_str)
+
+            # 2. 打印行间的垂直连接线
+            if r < self.size - 1:
+                # 垂直线对齐交点，后面跟 3 个空格 (1空+2线)
+                v_line = "    " + f"{FG_BOARD}{SYMBOLS['line_v']}{RESET}   " * self.size
+                print(v_line)
+        print("")
