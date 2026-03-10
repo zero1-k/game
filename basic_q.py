@@ -211,12 +211,10 @@ class Board:
             if self.turn_count <= 20: 
                 if self.player_action_counts[piece.color]['drop'] >= 5:
                     return False
-                # 【中线限制】前10回合落子不能超过中线 (9x9 中线是行 4)
-                # 黑方(通常认为起始在上方或小行号区) vs 白方
-                # 根据之前 server.py，黑方初始在 row 0, 白方在 row 8
-                if piece.color == 'black' and x > 4:
+                # 【中线限制】黑方起始在 row 8（底部），白方起始在 row 0（顶部）
+                if piece.color == 'black' and x < 4:
                     return False
-                if piece.color == 'white' and x < 4:
+                if piece.color == 'white' and x > 4:
                     return False
 
             # 如果是落子（并非移动），要求目标点原本为空

@@ -166,7 +166,7 @@
             }
         }
 
-        /* 棋子式样 */
+        /* 棋子通式样式块 */
         .piece {
             width: 48px;
             height: 48px;
@@ -176,77 +176,61 @@
             justify-content: center;
             font-weight: bold;
             font-size: 24px;
-            box-shadow: 2px 4px 6px rgba(0, 0, 0, 0.3);
             user-select: none;
-            transition: transform 0.2s;
+            transition: all 0.2s;
             z-index: 20;
+            position: relative;
+            box-sizing: border-box;
         }
 
-        .piece:active {
-            transform: scale(0.9);
-        }
-
-        .piece.yin {
-            background: #000;
-            color: #fff;
-            border: 1px solid #333;
-        }
-
-        .piece.yang {
-            background: #fff;
-            color: #000;
-            border: 1px solid #ccc;
-            font-size: 30px;
-        }
-
-        /* 五行棋子不再使用杂乱的颜色背景，而是通过字体颜色和发光来区别五行属性 */
-        /* 通过复合选择器提升黑白背景的权重，确保能够覆盖任何残留配置 */
+        /* 基础阵营背景与立体感 */
         .piece.black {
             background: linear-gradient(135deg, #444, #111) !important;
-            border: 2px solid #666 !important;
-            box-shadow: 2px 4px 6px rgba(0, 0, 0, 0.6), inset 0 0 10px rgba(255, 255, 255, 0.1) !important;
+            border: 2px solid #555 !important;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.6), inset 0 2px 4px rgba(255, 255, 255, 0.1) !important;
         }
 
         .piece.white {
             background: linear-gradient(135deg, #fff, #ddd) !important;
-            border: 2px solid #999 !important;
-            box-shadow: 2px 4px 6px rgba(0, 0, 0, 0.3), inset 0 0 10px rgba(0, 0, 0, 0.05) !important;
+            border: 2px solid #bbb !important;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3), inset 0 2px 4px rgba(0, 0, 0, 0.1) !important;
         }
 
-        .piece.metal {
-            color: #fbc02d;
-            text-shadow: 0 0 8px #fbc02d;
-            font-weight: bold;
+        /* 阴阳棋特殊处理（保持原味但增加厚度） */
+        .piece.yin {
+            background: #000 !important;
+            color: #fff !important;
+            border: 2px solid #333 !important;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.8) !important;
         }
 
-        .piece.wood {
-            color: #8bc34a;
-            text-shadow: 0 0 8px #8bc34a;
-            font-weight: bold;
+        .piece.yang {
+            background: #fff !important;
+            color: #000 !important;
+            border: 2px solid #ccc !important;
+            font-size: 30px !important;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.3) !important;
         }
 
-        .piece.water {
-            color: #4fc3f7;
-            text-shadow: 0 0 8px #4fc3f7;
-            font-weight: bold;
-        }
+        /* 五行属性颜色与流光效果 */
+        .piece.metal { color: #fbc02d; text-shadow: 0 0 10px rgba(251, 192, 45, 0.8); }
+        .piece.wood  { color: #8bc34a; text-shadow: 0 0 10px rgba(139, 195, 74, 0.8); }
+        .piece.water { color: #4fc3f7; text-shadow: 0 0 10px rgba(79, 195, 247, 0.8); }
+        .piece.fire  { color: #ff7043; text-shadow: 0 0 10px rgba(255, 112, 67, 0.8); }
+        .piece.earth { color: #8d6e63; text-shadow: 0 0 10px rgba(141, 110, 99, 0.8); }
 
-        .piece.fire {
-            color: #ff7043;
-            text-shadow: 0 0 8px #ff7043;
-            font-weight: bold;
+        /* 墓地中的棋子样式增强：复用 .piece 样式，仅缩放 */
+        .dead-piece-item {
+            transform: scale(0.85); /* 稍微缩小一点以适应弹窗 */
+            cursor: help;
+            flex-shrink: 0;
+            margin: 4px;
         }
-
-        .piece.earth {
-            color: #8d6e63;
-            text-shadow: 0 0 8px #8d6e63;
-            font-weight: bold;
-        }
-
-        .piece.white {
-            background: linear-gradient(135deg, #fff, #ddd);
-            border: 2px solid #ccc;
-            box-shadow: 2px 4px 6px rgba(0, 0, 0, 0.3), inset 0 0 10px rgba(0, 0, 0, 0.05);
+        
+        /* 保持墓地中的阴阳棋合并项也有正确的样式 */
+        .dead-piece-item.black.yin-yang-representative {
+            background: linear-gradient(135deg, #222, #000) !important;
+            border-color: #444 !important;
         }
 
         /* 阴阳保留纯色特例 */
@@ -265,7 +249,6 @@
             text-shadow: none;
         }
 
-        /* 迷雾隐匿样式 */
         .piece.hidden {
             background: repeating-linear-gradient(45deg, #606060, #606060 10px, #505050 10px, #505050 20px) !important;
             color: #aaa !important;
@@ -276,6 +259,22 @@
 
         .piece.hidden .piece-energy {
             display: none;
+        }
+
+        /* 强化特效 */
+        .piece.buffed-piece {
+            box-shadow: 0 0 15px 4px rgba(255, 215, 0, 0.8), inset 0 0 10px rgba(255, 215, 0, 0.5) !important;
+            animation: buffPulse 2s infinite alternate;
+        }
+
+        @keyframes buffPulse {
+            from {
+                box-shadow: 0 0 10px 2px rgba(255, 215, 0, 0.6), inset 0 0 8px rgba(255, 215, 0, 0.4) !important;
+            }
+
+            to {
+                box-shadow: 0 0 20px 6px rgba(255, 215, 0, 1), inset 0 0 15px rgba(255, 215, 0, 0.7) !important;
+            }
         }
 
         #turn-indicator {
@@ -420,82 +419,1140 @@
             border-color: #f44336;
             box-shadow: 0 0 5px rgba(255, 0, 0, 0.5);
         }
+
+        /* ===== 卡牌系统布局 ===== */
+        #main-layout {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 10px;
+            width: 100%;
+            padding: 10px 0;
+        }
+
+        #top-info {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .player-zone {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            width: 620px;
+        }
+
+        #board-section {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        /* 手牌行 */
+        .zone-hand-row {
+            display: flex;
+            align-items: center;
+            padding: 10px 14px;
+            background: rgba(0, 0, 0, 0.38);
+            border-radius: 12px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            gap: 10px;
+        }
+
+        .zone-hand {
+            display: flex;
+            gap: 8px;
+            flex: 1;
+            justify-content: center;
+            flex-wrap: nowrap;
+            overflow: visible;
+        }
+
+        .zone-vitality {
+            font-size: 22px;
+            font-weight: bold;
+            color: #ffeb3b;
+            text-shadow: 0 0 8px rgba(255, 235, 59, 0.5);
+            white-space: nowrap;
+            min-width: 70px;
+        }
+
+        .zone-vitality span.vl {
+            font-size: 12px;
+            color: #aaa;
+            font-weight: normal;
+            display: block;
+        }
+
+        /* 牌库/墓地 */
+        .card-stack-wrap {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 3px;
+            flex-shrink: 0;
+        }
+
+        .card-stack {
+            position: relative;
+            width: 54px;
+            height: 76px;
+        }
+
+        .card-stack-visual {
+            width: 54px;
+            height: 76px;
+            border-radius: 7px;
+            background: linear-gradient(135deg, #1a3a5c, #0d2035);
+            border: 1px solid rgba(255, 255, 255, 0.22);
+            position: absolute;
+            box-shadow: 3px 3px 0 rgba(0, 0, 0, 0.5), 5px 5px 0 rgba(0, 0, 0, 0.3);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+        }
+
+        .card-stack-visual.graveyard {
+            background: linear-gradient(135deg, #2a1212, #1a0808);
+            opacity: 0.85;
+        }
+
+        .card-stack-count {
+            position: absolute;
+            bottom: -8px;
+            right: -8px;
+            background: #ffca28;
+            color: #000;
+            font-size: 11px;
+            font-weight: bold;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 5;
+        }
+
+        .card-stack-name {
+            font-size: 10px;
+            color: #888;
+            text-align: center;
+            margin-top: 6px;
+        }
+
+        /* 手牌卡片 - 正面 */
+        .hand-card {
+            width: 76px;
+            height: 128px;
+            border-radius: 8px;
+            cursor: pointer;
+            position: relative;
+            transition: transform 0.18s, box-shadow 0.18s;
+            flex-shrink: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: flex-start;
+            overflow: visible;
+            user-select: none;
+        }
+
+        .hand-card:hover {
+            transform: translateY(-12px);
+            z-index: 10;
+        }
+
+        .hand-card.selected-card {
+            transform: translateY(-16px) scale(1.05);
+            box-shadow: 0 0 22px 6px rgba(255, 235, 59, 0.95) !important;
+            z-index: 20;
+        }
+
+        .hand-card.card-active {
+            background: linear-gradient(160deg, #0d2244, #1c3f7a);
+            border: 2px solid #4a8ae8;
+            box-shadow: 0 0 10px rgba(74, 138, 232, 0.6);
+        }
+
+        /* 可发动高亮特效：满足条件的卡牌产生脉冲光效 */
+        @keyframes card-pulse {
+            0%   { box-shadow: 0 0 8px 2px rgba(255, 215, 0, 0.7); }
+            50%  { box-shadow: 0 0 20px 6px rgba(255, 215, 0, 1); }
+            100% { box-shadow: 0 0 8px 2px rgba(255, 215, 0, 0.7); }
+        }
+        .hand-card.card-activatable {
+            animation: card-pulse 1.2s ease-in-out infinite;
+            position: relative;
+        }
+        .hand-card.card-activatable::before {
+            content: '✦ 可发动';
+            position: absolute;
+            top: -2px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: linear-gradient(90deg, #ffd700, #ff8c00);
+            color: #000;
+            font-size: 9px;
+            font-weight: bold;
+            padding: 1px 5px;
+            border-radius: 4px;
+            white-space: nowrap;
+            z-index: 10;
+            pointer-events: none;
+        }
+
+        .hand-card.card-counter {
+            background: linear-gradient(160deg, #2a0d0d, #641a1a);
+            border: 2px solid #e84a4a;
+            box-shadow: 0 0 10px rgba(232, 74, 74, 0.6);
+        }
+
+        .hand-card.card-instant {
+            background: linear-gradient(160deg, #2a2000, #6b5000);
+            border: 2px solid #e8c04a;
+            box-shadow: 0 0 10px rgba(232, 192, 74, 0.6);
+        }
+
+        .hand-card-cost {
+            position: absolute;
+            top: 4px;
+            right: 4px;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            font-size: 11px;
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 2;
+        }
+
+        .card-active .hand-card-cost {
+            background: #4a8ae8;
+            color: #fff;
+        }
+
+        .card-counter .hand-card-cost {
+            background: #e84a4a;
+            color: #fff;
+        }
+
+        .card-instant .hand-card-cost {
+            background: #e8c04a;
+            color: #000;
+        }
+
+        .hand-card-icon {
+            font-size: 26px;
+            margin-top: 12px;
+        }
+
+        .hand-card-name {
+            font-size: 10px;
+            font-weight: bold;
+            color: #eee;
+            text-align: center;
+            padding: 2px 3px 0;
+            line-height: 1.2;
+        }
+
+        .hand-card-subtype {
+            font-size: 8px;
+            color: rgba(255, 255, 255, 0.5);
+            margin-top: 1px;
+        }
+
+        .hand-card-desc {
+            font-size: 8px;
+            color: rgba(255, 255, 255, 0.7);
+            text-align: center;
+            padding: 2px 4px;
+            line-height: 1.3;
+            overflow: hidden;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            line-clamp: 2;
+            max-height: 22px;
+        }
+
+        /* 放大按钮 */
+        .card-zoom-btn {
+            position: absolute;
+            bottom: 3px;
+            right: 3px;
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.15);
+            border: none;
+            color: rgba(255, 255, 255, 0.6);
+            font-size: 9px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            line-height: 1;
+            padding: 0;
+            z-index: 30;
+            transition: background 0.15s;
+        }
+
+        .card-zoom-btn:hover {
+            background: rgba(255, 255, 255, 0.35);
+            color: #fff;
+        }
+
+        /* 卡牌放大弹窗 */
+        #card-zoom-modal {
+            display: none;
+            position: fixed;
+            inset: 0;
+            z-index: 9999;
+            background: rgba(0, 0, 0, 0.75);
+            align-items: center;
+            justify-content: center;
+            backdrop-filter: blur(4px);
+        }
+
+        /* 墓地弹窗样式 */
+        #graveyard-modal {
+            display: none;
+            position: fixed;
+            inset: 0;
+            z-index: 9000;
+            background: rgba(0, 0, 0, 0.85);
+            backdrop-filter: blur(8px);
+            overflow-y: auto;
+            padding: 40px 20px;
+        }
+
+        .grave-container {
+            background: #12121e;
+            border: 2px solid #4a4e69;
+            border-radius: 16px;
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 30px;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.8), 0 0 20px rgba(106, 90, 205, 0.2);
+        }
+
+        .grave-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+            padding-bottom: 20px;
+            margin-bottom: 24px;
+        }
+
+        .grave-title {
+            color: #daa520;
+            margin: 0;
+            font-size: 1.5em;
+            text-shadow: 0 0 10px rgba(218, 165, 32, 0.4);
+        }
+
+        .grave-section-title {
+            color: #8d99ae;
+            font-size: 14px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin: 20px 0 12px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .grave-section-title::after {
+            content: '';
+            flex: 1;
+            height: 1px;
+            background: rgba(255,255,255,0.05);
+        }
+
+        .grave-grid {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+            margin-bottom: 30px;
+        }
+
+        .dead-piece-item {
+            width: 44px;
+            height: 44px;
+            border-radius: 50%;
+            background: #1a1a2e;
+            border: 1px solid rgba(255,255,255,0.1);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+            color: #ddd;
+            position: relative;
+            box-shadow: inset 0 0 10px rgba(0,0,0,0.5);
+        }
+
+        .dead-piece-item.white { /* 移除此处的冗余定义，交由 .piece 处理 */ }
+
+        .grave-close-btn {
+            background: rgba(255,255,255,0.05);
+            border: 1px solid rgba(255,255,255,0.2);
+            border-radius: 8px;
+            color: #ccc;
+            padding: 8px 16px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .grave-close-btn:hover {
+            background: rgba(231, 76, 60, 0.2);
+            border-color: #e74c3c;
+            color: #fff;
+        }
+
+        #card-zoom-modal.open {
+            display: flex;
+        }
+
+        #card-zoom-inner {
+            width: 240px;
+            border-radius: 18px;
+            padding: 28px 24px 24px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 10px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.8), 0 0 0 1px rgba(255, 255, 255, 0.08);
+            position: relative;
+            animation: zoomIn 0.22s ease;
+        }
+
+        @keyframes zoomIn {
+            from {
+                transform: scale(0.7);
+                opacity: 0;
+            }
+
+            to {
+                transform: scale(1);
+                opacity: 1;
+            }
+        }
+
+        #card-zoom-inner.card-active {
+            background: linear-gradient(170deg, #0a1d3a, #1a3870);
+            border: 2px solid #4a8ae8;
+        }
+
+        #card-zoom-inner.card-counter {
+            background: linear-gradient(170deg, #220a0a, #561515);
+            border: 2px solid #e84a4a;
+        }
+
+        #card-zoom-inner.card-instant {
+            background: linear-gradient(170deg, #201800, #5a4200);
+            border: 2px solid #e8c04a;
+        }
+
+        #czoom-cost {
+            position: absolute;
+            top: 12px;
+            right: 14px;
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            font-size: 14px;
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .card-active #czoom-cost {
+            background: #4a8ae8;
+            color: #fff;
+        }
+
+        .card-counter #czoom-cost {
+            background: #e84a4a;
+            color: #fff;
+        }
+
+        .card-instant #czoom-cost {
+            background: #e8c04a;
+            color: #000;
+        }
+
+        #czoom-icon {
+            font-size: 52px;
+            margin-bottom: 4px;
+        }
+
+        #czoom-name {
+            font-size: 20px;
+            font-weight: bold;
+            color: #fff;
+            letter-spacing: 2px;
+        }
+
+        #czoom-subtype {
+            font-size: 12px;
+            color: rgba(255, 255, 255, 0.5);
+        }
+
+        #czoom-divider {
+            width: 100%;
+            height: 1px;
+            background: rgba(255, 255, 255, 0.15);
+            margin: 4px 0;
+        }
+
+        #czoom-dur {
+            font-size: 11px;
+            padding: 3px 10px;
+            border-radius: 20px;
+            background: rgba(255, 255, 255, 0.1);
+            color: rgba(255, 255, 255, 0.6);
+        }
+
+        #czoom-desc {
+            font-size: 13px;
+            color: rgba(255, 255, 255, 0.88);
+            text-align: center;
+            line-height: 1.6;
+            padding: 0 4px;
+        }
+
+        #czoom-close {
+            margin-top: 6px;
+            padding: 7px 28px;
+            border-radius: 20px;
+            background: rgba(255, 255, 255, 0.12);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            color: #fff;
+            cursor: pointer;
+            font-size: 13px;
+            transition: background 0.15s;
+        }
+
+        #czoom-close:hover {
+            background: rgba(255, 255, 255, 0.25);
+        }
+
+        /* 手牌卡片 - 背面（对手） */
+        .hand-card-back {
+            width: 76px;
+            height: 108px;
+            border-radius: 8px;
+            flex-shrink: 0;
+            background: repeating-linear-gradient(45deg, #1a2a3a, #1a2a3a 6px, #12202e 6px, #12202e 12px);
+            border: 2px solid rgba(255, 255, 255, 0.14);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 22px;
+            color: rgba(255, 255, 255, 0.12);
+        }
+
+        /* 效果区 */
+        .zone-field {
+            min-height: 100px;
+            position: relative;
+            border: 1px dashed rgba(255, 255, 255, 0.18);
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 10px 16px;
+            background: rgba(0, 0, 0, 0.25);
+        }
+
+        .zone-field-label {
+            position: absolute;
+            top: -10px;
+            left: 16px;
+            font-size: 11px;
+            color: rgba(255, 255, 255, 0.45);
+            background: #2c3e50;
+            padding: 0 6px;
+            letter-spacing: 1px;
+        }
+
+        .zone-field-empty {
+            font-size: 12px;
+            color: rgba(255, 255, 255, 0.2);
+            flex: 1;
+            text-align: center;
+        }
+
+        .field-card {
+            width: 140px;
+            height: 50px;
+            border-radius: 6px;
+            flex-shrink: 0;
+            display: flex;
+            flex-direction: row;
+            align-items: center;
+            justify-content: flex-start;
+            padding: 4px 6px;
+            gap: 6px;
+            overflow: hidden;
+            position: relative;
+            background: rgba(0, 0, 0, 0.5);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            color: #eee;
+            cursor: help;
+        }
+
+        .field-card.card-active {
+            background: linear-gradient(90deg, #0d2244, #1c3f7a);
+            border: 1px solid #4a8ae8;
+            box-shadow: 0 0 8px rgba(74, 138, 232, 0.4);
+        }
+
+        .field-card.card-counter {
+            background: linear-gradient(90deg, #2a0d0d, #641a1a);
+            border: 1px solid #e84a4a;
+            box-shadow: 0 0 8px rgba(232, 74, 74, 0.4);
+        }
+
+        .field-card.card-instant {
+            background: linear-gradient(90deg, #2a2000, #6b5000);
+            border: 1px solid #e8c04a;
+            box-shadow: 0 0 8px rgba(232, 192, 74, 0.4);
+        }
+
+        .fc-icon {
+            font-size: 20px;
+            flex-shrink: 0;
+        }
+
+        .fc-info {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-start;
+            flex: 1;
+            overflow: hidden;
+        }
+
+        .fc-name {
+            font-size: 11px;
+            font-weight: bold;
+            white-space: nowrap;
+        }
+
+        .fc-desc {
+            font-size: 9px;
+            color: #bbb;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            width: 100%;
+            text-align: left;
+        }
+
+        .fc-cost {
+            position: absolute;
+            right: 4px;
+            top: 4px;
+            width: 14px;
+            height: 14px;
+            font-size: 9px;
+            font-weight: bold;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .card-active .fc-cost {
+            background: #4a8ae8;
+            color: #fff;
+        }
+
+        .card-counter .fc-cost {
+            background: #e84a4a;
+            color: #fff;
+        }
+
+        .card-instant .fc-cost {
+            background: #e8c04a;
+            color: #000;
+        }
+
+        /* 卡牌操作提示 */
+        #card-action-info {
+            font-size: 12px;
+            color: #ffca28;
+            background: rgba(0, 0, 0, 0.55);
+            border-radius: 20px;
+            padding: 4px 14px;
+            display: none;
+        }
+
+        #card-action-info.visible {
+            display: block;
+        }
+
+        /* 三列中间行 */
+        #mid-row {
+            display: flex;
+            flex-direction: row;
+            align-items: stretch;
+            gap: 10px;
+        }
+
+        /* 竖向效果区（左/右侧） */
+        .zone-field-v {
+            width: 160px;
+            min-width: 160px;
+            min-height: unset;
+            flex-direction: column;
+            align-items: center;
+            justify-content: flex-start;
+            border-radius: 12px;
+            padding: 20px 10px;
+            gap: 10px;
+        }
+
+        .zone-field-v .zone-field-label {
+            top: unset;
+            left: unset;
+            position: relative;
+            writing-mode: horizontal-tb;
+            margin-bottom: 8px;
+            background: transparent;
+            font-size: 12px;
+            color: rgba(255, 255, 255, 0.5);
+            letter-spacing: 2px;
+        }
+
+        /* ===== 阶段控制条 ===== */
+        #phase-bar {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 8px 18px;
+            background: rgba(0, 0, 0, 0.55);
+            border-radius: 12px;
+            margin-top: 8px;
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        #phase-label {
+            font-size: 14px;
+            font-weight: bold;
+            color: #ffca28;
+            min-width: 180px;
+            text-align: center;
+            letter-spacing: 1px;
+        }
+
+        .phase-btn {
+            padding: 5px 18px;
+            border-radius: 20px;
+            border: none;
+            cursor: pointer;
+            font-size: 13px;
+            font-weight: bold;
+            transition: all 0.15s;
+            letter-spacing: 1px;
+        }
+
+        #btn-to-action {
+            background: #4a8ae8;
+            color: #fff;
+        }
+
+        #btn-to-action:hover {
+            background: #5a9af8;
+            transform: scale(1.04);
+        }
+
+        #btn-end-turn {
+            background: #e84a4a;
+            color: #fff;
+        }
+
+        #btn-end-turn:hover {
+            background: #f85a5a;
+            transform: scale(1.04);
+        }
+
+        .invoke-btn {
+            position: absolute;
+            top: -32px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #ffca28;
+            color: #000;
+            font-weight: bold;
+            border: none;
+            border-radius: 6px;
+            padding: 4px 14px;
+            cursor: pointer;
+            display: none;
+            z-index: 100;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.6);
+            font-size: 14px;
+        }
+
+        .invoke-btn:hover {
+            background: #ffe066;
+            transform: translateX(-50%) scale(1.08);
+        }
+
+        .hand-card.selected-card .invoke-btn {
+            display: block;
+            animation: floatBtn 1s ease infinite alternate;
+        }
+
+        @keyframes floatBtn {
+            from {
+                top: -32px;
+            }
+
+            to {
+                top: -38px;
+            }
+        }
+
+        /* ===== 弃牌弹窗 ===== */
+        #discard-modal {
+            display: none;
+            position: fixed;
+            inset: 0;
+            z-index: 9998;
+            background: rgba(0, 0, 0, 0.82);
+            align-items: center;
+            justify-content: center;
+            backdrop-filter: blur(5px);
+        }
+
+        #discard-modal.open {
+            display: flex;
+        }
+
+        #discard-inner {
+            background: linear-gradient(170deg, #1a2a3a, #0d1a26);
+            border: 2px solid #e84a4a;
+            border-radius: 18px;
+            padding: 24px 28px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 14px;
+            max-width: 860px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.9);
+            animation: zoomIn 0.22s ease;
+        }
+
+        #discard-title {
+            font-size: 16px;
+            color: #ff7070;
+            font-weight: bold;
+        }
+
+        #discard-count {
+            font-size: 12px;
+            color: #aaa;
+        }
+
+        #discard-hand {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            justify-content: center;
+            max-width: 820px;
+        }
+
+        .discard-card-wrap {
+            position: relative;
+            cursor: pointer;
+        }
+
+        .discard-card-wrap.selected-discard {
+            opacity: 0.55;
+        }
+
+        .discard-card-wrap.selected-discard::after {
+            content: '✕';
+            position: absolute;
+            inset: 0;
+            border-radius: 8px;
+            background: rgba(232, 74, 74, 0.75);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 34px;
+            color: #fff;
+        }
+
+        /* ===== 选牌弹窗 (无中生有/探囊取物) ===== */
+        #card-select-modal {
+            display: none;
+            position: fixed;
+            inset: 0;
+            z-index: 9999;
+            background: rgba(0, 0, 0, 0.85);
+            align-items: center;
+            justify-content: center;
+            backdrop-filter: blur(8px);
+        }
+
+        #card-select-modal.open {
+            display: flex;
+        }
+
+        #cs-inner {
+            background: linear-gradient(170deg, #102030, #0a111a);
+            border: 2px solid #ffca28;
+            border-radius: 18px;
+            padding: 24px 28px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 14px;
+            max-width: 900px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.9);
+            animation: zoomIn 0.22s ease;
+        }
+
+        #cs-title {
+            font-size: 18px;
+            color: #ffca28;
+            font-weight: bold;
+            letter-spacing: 1px;
+        }
+
+        #cs-desc {
+            font-size: 13px;
+            color: #ccc;
+            margin-bottom: 8px;
+        }
+
+        #cs-cards-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            justify-content: center;
+            max-width: 860px;
+            max-height: 400px;
+            overflow-y: auto;
+            padding: 10px;
+        }
+
+        #discard-confirm {
+            padding: 8px 32px;
+            border-radius: 20px;
+            border: none;
+            background: #e84a4a;
+            color: #fff;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: bold;
+            transition: all 0.15s;
+        }
+
+        #discard-confirm:hover:not(:disabled) {
+            background: #f86060;
+            transform: scale(1.04);
+        }
+
+        #discard-confirm:disabled {
+            background: #555;
+            color: #999;
+            cursor: not-allowed;
+        }
     </style>
 </head>
 
 <body>
-    <h1>五行棋</h1>
+    <div id="main-layout">
 
-    <div id="round-info">第 <span id="round-num">1</span> 回合</div>
+        <!-- 顶部信息栏 -->
+        <div id="top-info">
+            <h1 style="margin:8px 0 2px;">五行卡棋</h1>
+            <div id="round-info">第 <span id="round-num">1</span> 回合</div>
+            <div id="network-panel"
+                style="background:rgba(0,0,0,0.6);padding:8px 14px;border-radius:10px;border:1px solid #ffca28;">
+                房间号:<input type="text" id="room-input" value="123"
+                    style="width:52px;background:#333;color:#fff;border:1px solid #555;margin:0 4px;">
+                角色:<select id="role-select" style="background:#333;color:#fff;border:1px solid #555;margin:0 4px;">
+                    <option value="black">黑方(先手)</option>
+                    <option value="white">白方</option>
+                </select>
+                <button onclick="joinRoom()"
+                    style="padding:4px 12px;background:#ffca28;color:#000;border:none;border-radius:4px;cursor:pointer;font-weight:bold;">加入对战</button>
+                <span id="conn-status" style="margin-left:8px;color:#ff5252;">未连接</span>
+            </div>
+            <div id="turn-indicator" class="turn-black">当前行动：黑方 (阴)</div>
+            <div id="extra-rights-indicator" style="font-size:12px;color:#8bc34a;margin-top:4px;"></div>
+            <div id="card-action-info"></div>
+        </div>
 
-    <!-- 网络对战控制面板 -->
-    <div id="network-panel"
-        style="background: rgba(0,0,0,0.6); padding: 15px; border-radius: 10px; margin-bottom: 20px; border: 1px solid #ffca28;">
-        <div>
-            房间号: <input type="text" id="room-input" value="123"
-                style="width: 60px; background: #333; color: #fff; border: 1px solid #555;">
-            角色:
-            <select id="role-select" style="background: #333; color: #fff; border: 1px solid #555;">
-                <option value="black">黑方 (先手)</option>
-                <option value="white">白方</option>
-            </select>
-            <button onclick="joinRoom()"
-                style="padding: 5px 15px; background: #ffca28; color: #000; border: none; border-radius: 4px; cursor: pointer; font-weight: bold;">加入对战</button>
-            <span id="conn-status" style="margin-left: 10px; color: #ff5252;">未连接</span>
+        <!-- 白方手牌行（上） -->
+        <div class="zone-hand-row" id="white-zone" style="width:960px;">
+            <div class="zone-vitality" style="text-align:left;"><span class="vl">白方气 ○</span><span
+                    id="vitality-white">50</span></div>
+            <div class="card-stack-wrap">
+                <div class="card-stack">
+                    <div class="card-stack-visual">🂠</div>
+                    <div class="card-stack-count" id="deck-count-white">0</div>
+                </div>
+                <div class="card-stack-name">牌库</div>
+            </div>
+            <div class="zone-hand" id="hand-white"></div>
+            <div class="card-stack-wrap">
+                <div class="card-stack" style="cursor:pointer;" title="点击查看白方墓地" onclick="openGraveyardModal('white')">
+                    <div class="card-stack-visual graveyard">💀</div>
+                    <div class="card-stack-count" id="grave-count-white">0</div>
+                </div>
+                <div class="card-stack-name">墓地</div>
+            </div>
+            <div id="reserve-yang" class="reserve-item" onclick="selectReserve('yang')" style="flex-shrink:0;">
+                <div class="piece yang" style="width:38px;height:38px;font-size:22px;">○</div>
+                <div style="font-size:10px;color:#aaa;">阳棋</div>
+            </div>
+        </div>
+
+        <!-- 中间三列：左效果区 | 棋盘 | 右效果区 -->
+        <div id="mid-row">
+            <!-- 左侧：白方效果区（竖向） -->
+            <div class="zone-field zone-field-v" id="field-white">
+                <span class="zone-field-label">白方效果区</span>
+                <span class="zone-field-empty" style="writing-mode:vertical-lr;">— 无效果 —</span>
+            </div>
+
+            <!-- 棋盘 -->
+            <div id="board-section">
+                <div id="game-container">
+                    <div class="board-lines-h">
+                        <div class="line line-h" style="top:0px"></div>
+                        <div class="line line-h" style="top:60px"></div>
+                        <div class="line line-h" style="top:120px"></div>
+                        <div class="line line-h" style="top:180px"></div>
+                        <div class="line line-h" style="top:240px"></div>
+                        <div class="line line-h" style="top:300px"></div>
+                        <div class="line line-h" style="top:360px"></div>
+                        <div class="line line-h" style="top:420px"></div>
+                        <div class="line line-h" style="top:480px"></div>
+                    </div>
+                    <div class="board-lines-v">
+                        <div class="line line-v" style="left:0px"></div>
+                        <div class="line line-v" style="left:60px"></div>
+                        <div class="line line-v" style="left:120px"></div>
+                        <div class="line line-v" style="left:180px"></div>
+                        <div class="line line-v" style="left:240px"></div>
+                        <div class="line line-v" style="left:300px"></div>
+                        <div class="line line-v" style="left:360px"></div>
+                        <div class="line line-v" style="left:420px"></div>
+                        <div class="line line-v" style="left:480px"></div>
+                    </div>
+                    <div id="board"></div>
+                </div>
+                <div id="info">点击棋子移动，或点击手牌发动卡牌</div>
+
+                <div id="phase-bar">
+                    <span id="phase-label">🎮 自由行动阶段</span>
+                    <button id="btn-end-turn" class="phase-btn" onclick="endTurn()">⏹ 结束回合</button>
+                </div>
+            </div>
+
+            <!-- 右侧：黑方效果区（竖向） -->
+            <div class="zone-field zone-field-v" id="field-black">
+                <span class="zone-field-label">黑方效果区</span>
+                <span class="zone-field-empty" style="writing-mode:vertical-lr;">— 无效果 —</span>
+            </div>
+        </div>
+
+        <!-- 黑方手牌行（下） -->
+        <div class="zone-hand-row" id="black-zone" style="width:960px;">
+            <div id="reserve-yin" class="reserve-item" onclick="selectReserve('yin')" style="flex-shrink:0;">
+                <div class="piece yin" style="width:38px;height:38px;font-size:20px;">☯</div>
+                <div style="font-size:10px;color:#aaa;">阴棋</div>
+            </div>
+            <div class="card-stack-wrap">
+                <div class="card-stack">
+                    <div class="card-stack-visual">🂠</div>
+                    <div class="card-stack-count" id="deck-count-black">0</div>
+                </div>
+                <div class="card-stack-name">牌库</div>
+            </div>
+            <div class="zone-hand" id="hand-black"></div>
+            <div class="card-stack-wrap">
+                <div class="card-stack" style="cursor:pointer;" title="点击查看黑方墓地" onclick="openGraveyardModal('black')">
+                    <div class="card-stack-visual graveyard">💀</div>
+                    <div class="card-stack-count" id="grave-count-black">0</div>
+                </div>
+                <div class="card-stack-name">墓地</div>
+            </div>
+            <div class="zone-vitality" style="text-align:right;"><span class="vl">黑方气 ☯</span><span
+                    id="vitality-black">50</span></div>
+        </div>
+
+    </div>
+
+    <!-- 墓地查看弹窗：展示已死亡棋子与已消耗卡牌 -->
+    <div id="graveyard-modal" onclick="if(event.target===this) this.style.display='none'">
+        <div class="grave-container shadow-premium">
+            <div class="grave-header">
+                <h3 id="grave-modal-title" class="grave-title">💀 墓地</h3>
+                <button class="grave-close-btn" onclick="document.getElementById('graveyard-modal').style.display='none'">✕ 返回战场</button>
+            </div>
+            
+            <div class="grave-section-title">已死亡五行棋子</div>
+            <div id="grave-modal-pieces" class="grave-grid"></div>
+            <p id="grave-pieces-empty" style="color:#555; font-size:13px; margin: 0 0 20px 10px;">— 尚无棋子阵亡 —</p>
+
+            <div class="grave-section-title">已消耗/弃置卡牌</div>
+            <div id="grave-modal-list" class="grave-grid"></div>
+            <p id="grave-modal-empty" style="color:#555; font-size:13px; margin: 0 0 20px 10px;">— 弃牌堆为空 —</p>
         </div>
     </div>
 
-    <div id="vitality-panel">
-        <div class="vitality-item">
-            <span class="vitality-label">黑方气 (☯)</span>
-            <span id="vitality-black" class="vitality-value">20</span>
-        </div>
-        <div class="vitality-item">
-            <span class="vitality-label">白方气 (○)</span>
-            <span id="vitality-white" class="vitality-value">20</span>
+    <!-- 卡牌放大弹窗 -->
+    <div id="card-zoom-modal" onclick="if(event.target===this) closeCardZoom()">
+        <div id="card-zoom-inner">
+            <div id="czoom-cost"></div>
+            <div id="czoom-icon"></div>
+            <div id="czoom-name"></div>
+            <div id="czoom-subtype"></div>
+            <div id="czoom-divider"></div>
+            <div id="czoom-dur"></div>
+            <div id="czoom-desc"></div>
+            <button id="czoom-close" onclick="closeCardZoom()">关 闭</button>
         </div>
     </div>
 
-    <div id="turn-indicator" class="turn-black">当前回合：黑方</div>
-
-    <div id="game-container">
-        <!-- 装饰线 -->
-        <div class="board-lines-h">
-            <div class="line line-h" style="top: 0px"></div>
-            <div class="line line-h" style="top: 60px"></div>
-            <div class="line line-h" style="top: 120px"></div>
-            <div class="line line-h" style="top: 180px"></div>
-            <div class="line line-h" style="top: 240px"></div>
-            <div class="line line-h" style="top: 300px"></div>
-            <div class="line line-h" style="top: 360px"></div>
-            <div class="line line-h" style="top: 420px"></div>
-            <div class="line line-h" style="top: 480px"></div>
+    <!-- 弃牌弹窗 -->
+    <div id="discard-modal">
+        <div id="discard-inner">
+            <div id="discard-title">手牌超出上限，请选择弃掉的卡牌</div>
+            <div id="discard-count">当前需要弃掉: <span id="discard-need">0</span> 张 | 已选: <span
+                    id="discard-selected">0</span> 张</div>
+            <div id="discard-hand"></div>
+            <button id="discard-confirm" onclick="confirmDiscard()" disabled>确认弃牌</button>
         </div>
-        <div class="board-lines-v">
-            <div class="line line-v" style="left: 0px"></div>
-            <div class="line line-v" style="left: 60px"></div>
-            <div class="line line-v" style="left: 120px"></div>
-            <div class="line line-v" style="left: 180px"></div>
-            <div class="line line-v" style="left: 240px"></div>
-            <div class="line line-v" style="left: 300px"></div>
-            <div class="line line-v" style="left: 360px"></div>
-            <div class="line line-v" style="left: 420px"></div>
-            <div class="line line-v" style="left: 480px"></div>
-        </div>
-
-        <div id="board"></div>
     </div>
 
-    <div id="info">点击选择五行棋子移动，或选择下方阴阳棋子落子卡位</div>
-
-    <div id="reserve-container">
-        <div id="reserve-yin" class="reserve-item" onclick="selectReserve('yin')">
-            <div class="piece yin">☯</div>
-            <div class="reserve-label">阴棋 (黑方)</div>
-        </div>
-        <div id="reserve-yang" class="reserve-item" onclick="selectReserve('yang')">
-            <div class="piece yang">○</div>
-            <div class="reserve-label">阳棋 (白方)</div>
+    <!-- 选牌弹窗 -->
+    <div id="card-select-modal">
+        <div id="cs-inner">
+            <div id="cs-title">选择卡牌</div>
+            <div id="cs-desc"></div>
+            <div id="cs-cards-container"></div>
+            <button id="cs-confirm"
+                style="padding: 8px 30px; border-radius: 20px; border: none; background: #ffca28; color: #000; font-weight: bold; cursor: pointer; font-size: 14px;"
+                disabled>确认选择</button>
         </div>
     </div>
 
@@ -546,8 +1603,8 @@
                     alert("双人就绪，统一棋盘已生成，开始对战！");
                 });
 
-                socket.on('sync_action', (data) => {
-                    handleRemoteAction(data);
+                socket.on('sync_action', async (data) => {
+                    await handleRemoteAction(data);
                 });
 
                 socket.on('player_disconnected', () => {
@@ -581,7 +1638,7 @@
             return true;
         }
 
-        function handleRemoteAction(data) {
+        async function handleRemoteAction(data) {
             const { action_type, payload } = data;
             console.log("Receiving Sync Action:", action_type, payload);
             try {
@@ -605,7 +1662,12 @@
                         playerActionCounts[mover_color].reveal++;
                         resolveCaptures(r, c, mover_color);
                     }
+                } else if (action_type === 'use_card') {
+                    payload.isRemote = true;
+                    await useSelectedCard(payload.targetPos, payload);
                 }
+                updateVitalityDisplay();
+                renderBoard();
                 switchTurn();
             } catch (err) {
                 console.error("Sync Action Process Error:", err);
@@ -622,16 +1684,16 @@
             grid = Array(boardSize).fill(null).map(() => Array(boardSize).fill(null));
             black_positions.forEach((col, i) => {
                 const type = templates[i];
-                grid[0][col] = { type, color: 'black', symbol: getSymbolByType(type), isRevealed: false };
+                grid[8][col] = { type, color: 'black', symbol: getSymbolByType(type), isRevealed: false };
             });
             white_positions.forEach((col, i) => {
                 const type = templates[i];
-                grid[8][col] = { type, color: 'white', symbol: getSymbolByType(type), isRevealed: false };
+                grid[0][col] = { type, color: 'white', symbol: getSymbolByType(type), isRevealed: false };
             });
             playerActionCounts = { black: { reveal: 0, drop: 0 }, white: { reveal: 0, drop: 0 } };
             roundCount = 1;
             currentPlayer = 'black';
-            playerVitality = { black: 20, white: 20 };
+            playerVitality = { black: 50, white: 50 };
             updateVitalityDisplay();
         }
 
@@ -641,15 +1703,36 @@
         let selectedReserve = null;
         let currentPlayer = 'black';
         let roundCount = 1;
-        let playerVitality = { black: 20, white: 20 };
+        let playerVitality = { black: 50, white: 50 };
         let playerActionCounts = { black: { reveal: 0, drop: 0 }, white: { reveal: 0, drop: 0 } };
         const initialEnergyMap = { metal: 3, wood: 4, water: 5, fire: 3, earth: 4, yin: 1, yang: 1 };
         const GENERA = { wood: 'fire', fire: 'earth', earth: 'metal', metal: 'water', water: 'wood' };
         const OVERCOMES = { wood: 'earth', earth: 'water', water: 'fire', fire: 'metal', metal: 'wood' };
 
+        let turnPhase = 'free'; // 简化为单一 free 阶段
+        let playerTurnCount = { black: 0, white: 0 };
+        let actionDoneThisTurn = false;
+        let discardSelecting = [];
+        const HAND_LIMIT = 7;
+        const DRAW_INTERVAL = 5;
+        let actionBlockedThisTurn = false;
+        let cardsPlayedThisTurn = 0;
+        let prevTurnCaptureEvents = [];
+        let thisTurnCaptureEvents = [];
+        let counterWindowOpen = false;              // 反制卡连锁窗口是否开启中
+        let counterWindowEvent = null;              // 当前连锁窗口对应的吃子事件
+        let deadPieces = { 
+            black: { fiveElements: [], yin: 0, yang: 0 }, 
+            white: { fiveElements: [], yin: 0, yang: 0 } 
+        }; // 墓地记录：五行棋列表（借尸还魂用），阴阳棋计数
+        let extraYinYangRights = { black: 0, white: 0 }; // 柯木逢春：额外落子阴阳棋权利
+        let loanedCosts = { black: 0, white: 0 };  // 破釜沉舟：记账欠款
+        let extraActionPiece = null;               // 乘胜追击：获授权额外行动的棋子位置
+        let pendingSwapPiece = null;               // 偷天换日：第一次点击di位置
         function updateVitalityDisplay() {
             document.getElementById('vitality-black').textContent = playerVitality.black;
             document.getElementById('vitality-white').textContent = playerVitality.white;
+            checkGameOver();
         }
 
         function switchTurn() {
@@ -658,18 +1741,301 @@
                 document.getElementById('round-num').textContent = roundCount;
             }
             currentPlayer = currentPlayer === 'black' ? 'white' : 'black';
+            onTurnStart(currentPlayer);
+        }
+
+        function onTurnStart(color) {
+            playerTurnCount[color]++;
             const indicator = document.getElementById('turn-indicator');
-            indicator.className = currentPlayer === 'black' ? 'turn-black' : 'turn-white';
-            indicator.textContent = `当前行动：${currentPlayer === 'black' ? '黑方 (阴)' : '白方 (阳)'}`;
-            checkGameOver();
+            indicator.className = color === 'black' ? 'turn-black' : 'turn-white';
+            indicator.textContent = `当前行动：${color === 'black' ? '黑方 (阴)' : '白方 (阳)'}`;
+            
+            // 更新额外权利显示 (枯木逢春等)
+            const er = extraYinYangRights[color];
+            const erEl = document.getElementById('extra-rights-indicator');
+            if (erEl) {
+                if (er > 0) {
+                    erEl.textContent = `✨ 获得「枯木逢春」加持：本回合可额外落子阴阳棋 ${er} 枚 (2气/枚)`;
+                    erEl.style.display = 'block';
+                } else {
+                    erEl.style.display = 'none';
+                }
+            }
+
+            actionBlockedThisTurn = false; // 重置行动限制状态
+            cardsPlayedThisTurn = 0;       // 重置本回合用牌计数
+            prevTurnCaptureEvents = [...thisTurnCaptureEvents]; // 保存上回合吃子记录
+            thisTurnCaptureEvents = [];    // 清空本回合记录
+
+            // 清除上一回合的turn效果卡
+            // 清除上一回合的turn效果卡，支持 turnsLeft 计数到期
+            for (const c of ['black', 'white']) {
+                const toRemove = [];
+                cardState[c].field = cardState[c].field.filter(card => {
+                    if (card.dur !== 'turn') return true; // permanent 卡永不移除
+                    if (card.turnsLeft !== undefined) { card.turnsLeft--; return card.turnsLeft > 0; }
+                    toRemove.push(card); return false;
+                });
+                // 对已移除的效果卡，清除其目标棋子上的临时属性
+                toRemove.forEach(card => {
+                    if (!card.targetRef) return;
+                    const [tr, tc] = card.targetRef.split(',').map(Number);
+                    const tp = grid[tr] && grid[tr][tc];
+                    if (!tp) return;
+                    if (card.id === '画地为牢') delete tp.frozen;
+                    if (card.id === '此消彼长') { delete tp.yinYangMod; delete tp.yinYangFieldMult; }
+                    if (card.id === '聚散浮沉') delete tp.tempEnergyMod;
+                    if (card.id === '偷梁换柱') delete tp.tempElement;
+                    if (card.id === '颠倒幾坤') delete tp.yinYangCanKill;
+                    if (card.id === '含沙射影') delete tp.hasTrap;
+                });
+            }
+            // 破釜沉舟还款：如若上回合使用过破釜沉舟，本回合开始强制还款
+            const opp2 = color === 'black' ? 'white' : 'black';
+            if (loanedCosts[opp2] > 0) {
+                playerVitality[opp2] -= loanedCosts[opp2];
+                loanedCosts[opp2] = 0;
+                updateVitalityDisplay();
+            }
+            // 重置乘胜追击额外行动
+            extraActionPiece = null;
+            pendingSwapPiece = null;
+
             clearSelection();
+            if (typeof cancelCardSelection !== 'undefined') cancelCardSelection();
+
+            // 每5个完整回合结束后抽1张卡
+            // 即: playerTurnCount 为 1 时是第一回合；当打满 1~5 回合后，进入第 6 回合时抽卡。
+            // 之后是第 11, 16, 21 回合抽卡...
+            if (playerTurnCount[color] > 1 && (playerTurnCount[color] - 1) % DRAW_INTERVAL === 0) {
+                if (typeof drawCard !== 'undefined') drawCard(color);
+            }
+
             updateVitalityDisplay();
+            if (typeof renderCardZones !== 'undefined') renderCardZones();
             renderBoard();
+
+            // 进入新回合，重置阶段为行棋前
+            actionDoneThisTurn = false;
+            turnPhase = 'free';
+            updatePhaseBar();
+
+            // 检查回合初始手牌是否超限（如果因为某些卡牌抽多了）
+            checkHandLimit(color);
+        }
+
+        function setPhase(phase) {
+            // phase 参数兼容旧调用：'post_card' 表示棋子行动结束，设 actionDoneThisTurn=true
+            if (phase === 'post_card' || phase === 'action_done') {
+                actionDoneThisTurn = true;
+            }
+            turnPhase = 'free'; // 始终保持 free
+            updatePhaseBar();
+        }
+
+        function updatePhaseBar() {
+            const label = document.getElementById('phase-label');
+            if (actionBlockedThisTurn) {
+                label.textContent = '🚫 行棋被禁止 — 可出牌或结束回合';
+            } else if (actionDoneThisTurn) {
+                label.textContent = '✅ 已行棋 — 可继续出牌或结束回合';
+            } else {
+                label.textContent = '🎮 自由行动阶段 — 可出牌或行棋';
+            }
+        }
+
+
+
+        function endTurn() {
+            if (myRoom && currentPlayer !== myRole) return;
+            // 自由阶段随时可以结束回合
+            if (!checkHandLimit(currentPlayer)) {
+                switchTurn();
+            }
+        }
+
+        // 返回 true 表示阻塞在弃牌阶段
+        function checkHandLimit(color) {
+            if (cardState[color].hand.length > HAND_LIMIT) {
+                openDiscardModal(color);
+                return true;
+            }
+            return false;
+        }
+
+        function openDiscardModal(color) {
+            const hand = cardState[color].hand;
+            const needToDiscard = hand.length - HAND_LIMIT;
+            discardSelecting = [];
+
+            document.getElementById('discard-need').textContent = needToDiscard;
+            document.getElementById('discard-selected').textContent = '0';
+
+            const cont = document.getElementById('discard-hand');
+            cont.innerHTML = '';
+            hand.forEach((card, idx) => {
+                const wrap = document.createElement('div');
+                wrap.className = 'discard-card-wrap';
+                wrap.id = `discard-card-${idx}`;
+
+                // 借用现有手牌渲染样式（简版）
+                const el = document.createElement('div');
+                el.className = `hand-card card-${card.type}`;
+                el.style.transform = 'none'; // 移除hover效果
+                el.innerHTML = `<div class="hand-card-icon">${card.icon}</div><div class="hand-card-name">${card.name}</div>`;
+
+                wrap.appendChild(el);
+                wrap.onclick = () => toggleDiscardSelect(idx, needToDiscard);
+                cont.appendChild(wrap);
+            });
+
+            document.getElementById('discard-confirm').disabled = true;
+            document.getElementById('discard-modal').classList.add('open');
+        }
+
+        function toggleDiscardSelect(idx, need) {
+            const wrap = document.getElementById(`discard-card-${idx}`);
+            const pos = discardSelecting.indexOf(idx);
+            if (pos !== -1) {
+                discardSelecting.splice(pos, 1);
+                wrap.classList.remove('selected-discard');
+            } else {
+                if (discardSelecting.length < need) {
+                    discardSelecting.push(idx);
+                    wrap.classList.add('selected-discard');
+                }
+            }
+            document.getElementById('discard-selected').textContent = discardSelecting.length;
+            document.getElementById('discard-confirm').disabled = (discardSelecting.length !== need);
+        }
+
+        let discardResolve = null;
+
+        function confirmDiscard() {
+            const color = currentPlayer;
+            const hand = cardState[color].hand;
+            const selection = [...discardSelecting];
+            const toDiscard = [...discardSelecting].sort((a, b) => b - a);
+            const discardedIds = [];
+
+            toDiscard.forEach(idx => {
+                const card = hand.splice(idx, 1)[0];
+                if (card) { cardState[color].graveyard.push(card); discardedIds.push(card.id); }
+            });
+
+            document.getElementById('discard-modal').classList.remove('open');
+            renderCardZones();
+
+            if (discardResolve) {
+                discardResolve({ indices: selection, ids: discardedIds }); // 新增 ids 字段
+                discardResolve = null;
+            } else if (turnPhase === 'post_card') {
+                switchTurn();
+            }
+        }
+
+        function forceDiscard(color, amount) {
+            return new Promise((resolve) => {
+                const hand = cardState[color].hand;
+                if (hand.length < amount) amount = hand.length;
+                if (amount <= 0) { resolve([]); return; }
+
+                discardSelecting = [];
+                document.getElementById('discard-need').textContent = amount;
+                document.getElementById('discard-selected').textContent = '0';
+
+                const cont = document.getElementById('discard-hand');
+                cont.innerHTML = '';
+                hand.forEach((card, idx) => {
+                    const wrap = document.createElement('div');
+                    wrap.className = 'discard-card-wrap';
+                    wrap.id = `discard-card-${idx}`;
+
+                    const el = document.createElement('div');
+                    el.className = `hand-card card-${card.type}`;
+                    el.style.transform = 'none';
+                    el.innerHTML = `<div class="hand-card-icon">${card.icon}</div><div class="hand-card-name">${card.name}</div>`;
+                    wrap.appendChild(el);
+                    wrap.onclick = () => toggleDiscardSelect(idx, amount);
+                    cont.appendChild(wrap);
+                });
+
+                document.getElementById('discard-confirm').disabled = true;
+                document.getElementById('discard-title').textContent = `强制弃牌：请选择 ${amount} 张卡牌扣除`;
+                document.getElementById('discard-modal').classList.add('open');
+                discardResolve = resolve;
+            });
+        }
+
+        let csSelecting = [];
+        let csResolve = null;
+        let csRequired = 0;
+
+        function openCardSelectModal(title, desc, cards, requiredCount, hideDetails = false) {
+            return new Promise((resolve) => {
+                csSelecting = [];
+                csRequired = requiredCount;
+                csResolve = resolve;
+
+                document.getElementById('cs-title').textContent = title;
+                document.getElementById('cs-desc').textContent = desc;
+
+                const cont = document.getElementById('cs-cards-container');
+                cont.innerHTML = '';
+
+                cards.forEach((card, idx) => {
+                    const wrap = document.createElement('div');
+                    wrap.className = 'discard-card-wrap';
+                    wrap.id = `cs-card-${idx}`;
+
+                    if (hideDetails) {
+                        const back = document.createElement('div');
+                        back.className = 'hand-card-back';
+                        back.title = '未知手牌';
+                        wrap.appendChild(back);
+                    } else {
+                        const el = document.createElement('div');
+                        el.className = `hand-card card-${card.type}`;
+                        el.style.transform = 'none';
+                        el.innerHTML = `<div class="hand-card-icon">${card.icon}</div><div class="hand-card-name">${card.name}</div>`;
+                        wrap.appendChild(el);
+                    }
+
+                    wrap.onclick = () => {
+                        const pos = csSelecting.indexOf(idx);
+                        if (pos !== -1) {
+                            csSelecting.splice(pos, 1);
+                            wrap.classList.remove('selected-discard');
+                        } else {
+                            if (csRequired === -1 || csSelecting.length < csRequired) {
+                                csSelecting.push(idx);
+                                wrap.classList.add('selected-discard');
+                            }
+                        }
+                        if (csRequired === -1) {
+                            document.getElementById('cs-confirm').disabled = (csSelecting.length === 0);
+                        } else {
+                            document.getElementById('cs-confirm').disabled = (csSelecting.length !== csRequired);
+                        }
+                    };
+                    cont.appendChild(wrap);
+                });
+
+                document.getElementById('cs-confirm').disabled = true;
+                const modal = document.getElementById('card-select-modal');
+                modal.classList.add('open');
+
+                document.getElementById('cs-confirm').onclick = () => {
+                    modal.classList.remove('open');
+                    const selection = [...csSelecting];
+                    if (csResolve) { csResolve(selection); csResolve = null; }
+                };
+            });
         }
 
         function checkGameOver() {
-            if (playerVitality.black < 10) { alert("游戏结束！白方获胜"); location.reload(); }
-            else if (playerVitality.white < 10) { alert("游戏结束！黑方获胜"); location.reload(); }
+            if (playerVitality.black < 10) { setTimeout(() => { alert("游戏结束！白方获胜"); location.reload(); }, 50); }
+            else if (playerVitality.white < 10) { setTimeout(() => { alert("游戏结束！黑方获胜"); location.reload(); }, 50); }
         }
 
         function getPathPoints(r1, c1, r2, c2) {
@@ -690,10 +2056,15 @@
         function calculateEnergy(r, c) {
             const p = grid[r][c];
             if (!p) return 0;
-            const init = initialEnergyMap[p.type];
-            // 阴阳棋子内气恒定，不参与 Aura 计算
-            if (p.type === 'yin' || p.type === 'yang') return init;
-
+            const energyBonus = (window.globalBuffs && window.globalBuffs[p.color + '_baseEnergyBonus']) || 0;
+            const tempMod = p.tempEnergyMod || 0;       // 聚散浮沉临时内气修正
+            const permDebuff = p.permEnergyDebuff || 0; // 含沙射影永久该和登峰造极等
+            const init = initialEnergyMap[p.type] + energyBonus + tempMod + permDebuff;
+            // 阴阳棋子
+            if (p.type === 'yin' || p.type === 'yang') {
+                const yinMod = p.yinYangMod || 0; // 此消彼长：+1被加成最大内气 2或-1成 0
+                return Math.max(0, init + yinMod);
+            }
             if (!p.isRevealed) return init;
             let delta = 0;
             const dirs = [{ r: -1, c: 0 }, { r: 1, c: 0 }, { r: 0, c: -1 }, { r: 0, c: 1 }];
@@ -703,10 +2074,12 @@
                     const nb = grid[nr][nc];
                     if (!nb) continue;
                     if (nb.type === 'yin' || nb.type === 'yang') {
-                        if (nb.color === p.color) delta += 1; else delta -= 1;
+                        const mult = nb.yinYangFieldMult !== undefined ? nb.yinYangFieldMult : 1; // 此消彼长场效倍率
+                        if (nb.color === p.color) delta += mult; else delta -= mult;
                     } else if (nb.isRevealed) {
-                        if (nb.color === p.color && GENERA[nb.type] === p.type) delta += 1;
-                        else if (nb.color !== p.color && OVERCOMES[nb.type] === p.type) delta -= 1;
+                        const nbElem = nb.tempElement || nb.type; // 偷梁换柱临时属性
+                        if (nb.color === p.color && GENERA[nbElem] === p.type) delta += 1;
+                        else if (nb.color !== p.color && OVERCOMES[nbElem] === p.type) delta -= 1;
                     }
                 }
             }
@@ -714,6 +2087,8 @@
         }
 
         function canMove(p, from, to) {
+            // 画地为牢：被冻结的棋子无法移动
+            if (p.frozen) return false;
             if (p.type !== 'yin' && p.type !== 'yang') {
                 const currentEnergy = calculateEnergy(from.r, from.c);
                 const threshold = (p.type === 'water') ? 2 : 1;
@@ -728,22 +2103,81 @@
                 if (GENERA[target.type] === p.type && calculateEnergy(from.r, from.c) < initialEnergyMap[p.type]) return false;
             }
             const r1 = from.r, c1 = from.c, r2 = to.r, c2 = to.c;
+            const hasBuff = (id) => p.buffs && p.buffs.includes(id);
             switch (p.type) {
-                case 'metal': return ((dx === 0 || dy === 0) && Math.max(dx, dy) <= 3 && isPathClear(getPathPoints(r1, c1, r2, c2)));
-                case 'wood': if (dx > 0 && dy > 0 && (dx + dy) <= 3) {
-                    const cornerA = { r: r1, c: c2 }, cornerB = { r: r2, c: c1 };
-                    if (grid[cornerA.r][cornerA.c] === null && isPathClear(getPathPoints(r1, c1, cornerA.r, cornerA.c)) && isPathClear(getPathPoints(cornerA.r, cornerA.c, r2, c2))) return true;
-                    if (grid[cornerB.r][cornerB.c] === null && isPathClear(getPathPoints(r1, c1, cornerB.r, cornerB.c)) && isPathClear(getPathPoints(cornerB.r, cornerB.c, r2, c2))) return true;
-                } return false;
-                case 'water': for (let cr = 0; cr < boardSize; cr++) {
-                    for (let cc = 0; cc < boardSize; cc++) {
-                        const dx1 = Math.abs(cr - r1), dy1 = Math.abs(cc - c1), dx2 = Math.abs(r2 - cr), dy2 = Math.abs(c2 - cc);
-                        if (((dx1 + dy1 === 1 && dx2 === 1 && dy2 === 1) || (dx1 === 1 && dy1 === 1 && dx2 + dy2 === 1) || (dx1 === 1 && dy1 === 1 && dx2 === 1 && dy2 === 1)) && (cr - r1) * (c2 - cc) !== (cc - c1) * (r2 - cr) && grid[cr][cc] === null) return true;
+                case 'metal':
+                    if (hasBuff('无坚不摧')) {
+                        if ((dx === 0 || dy === 0) && Math.max(dx, dy) <= 4) {
+                            let jumpCount = 0;
+                            for (let pt of getPathPoints(r1, c1, r2, c2)) { if (grid[pt.r][pt.c]) jumpCount++; }
+                            return jumpCount <= 1;
+                        }
+                        return false;
                     }
-                } return false;
-                case 'fire': if (dx === 0 || dy === 0) { const dist = Math.max(dx, dy); if (dist === 1) return true; if (dist >= 2 && dist <= 3) { let cnt = 0; for (let pt of getPathPoints(r1, c1, r2, c2)) { if (grid[pt.r][pt.c]) cnt++; } return cnt === 1; } } return false;
-                case 'earth': return (dx > 0 && dx === dy && dx <= 2 && isPathClear(getPathPoints(r1, c1, r2, c2)));
-                case 'yin': case 'yang': return (dx + dy === 1 && target === null);
+                    return ((dx === 0 || dy === 0) && Math.max(dx, dy) <= 3 && isPathClear(getPathPoints(r1, c1, r2, c2)));
+                case 'wood':
+                    if (hasBuff('移花接木')) {
+                        if (dx > 0 && dy > 0 && ((dx === dy && dx <= 2) || (dx + dy) <= 3)) {
+                            if (dx === dy) {
+                                let jumpCount = 0;
+                                for (let pt of getPathPoints(r1, c1, r2, c2)) { if (grid[pt.r][pt.c]) jumpCount++; }
+                                return jumpCount <= 1;
+                            } else {
+                                const cornerA = { r: r1, c: c2 }, cornerB = { r: r2, c: c1 };
+                                let vA = 0, vB = 0;
+                                for (let pt of getPathPoints(r1, c1, cornerA.r, cornerA.c)) { if (grid[pt.r][pt.c]) vA++; }
+                                if (grid[cornerA.r][cornerA.c]) vA++;
+                                for (let pt of getPathPoints(cornerA.r, cornerA.c, r2, c2)) { if (grid[pt.r][pt.c]) vA++; }
+                                if (vA <= 1) return true;
+                                for (let pt of getPathPoints(r1, c1, cornerB.r, cornerB.c)) { if (grid[pt.r][pt.c]) vB++; }
+                                if (grid[cornerB.r][cornerB.c]) vB++;
+                                for (let pt of getPathPoints(cornerB.r, cornerB.c, r2, c2)) { if (grid[pt.r][pt.c]) vB++; }
+                                if (vB <= 1) return true;
+                            }
+                        }
+                        return false;
+                    }
+                    if (dx > 0 && dy > 0 && (dx + dy) <= 3) {
+                        const cornerA = { r: r1, c: c2 }, cornerB = { r: r2, c: c1 };
+                        if (grid[cornerA.r][cornerA.c] === null && isPathClear(getPathPoints(r1, c1, cornerA.r, cornerA.c)) && isPathClear(getPathPoints(cornerA.r, cornerA.c, r2, c2))) return true;
+                        if (grid[cornerB.r][cornerB.c] === null && isPathClear(getPathPoints(r1, c1, cornerB.r, cornerB.c)) && isPathClear(getPathPoints(cornerB.r, cornerB.c, r2, c2))) return true;
+                    } return false;
+                case 'water':
+                    for (let cr = 0; cr < boardSize; cr++) {
+                        for (let cc = 0; cc < boardSize; cc++) {
+                            const dx1 = Math.abs(cr - r1), dy1 = Math.abs(cc - c1), dx2 = Math.abs(r2 - cr), dy2 = Math.abs(c2 - cc);
+                            if (((dx1 + dy1 === 1 && dx2 === 1 && dy2 === 1) || (dx1 === 1 && dy1 === 1 && dx2 + dy2 === 1) || (dx1 === 1 && dy1 === 1 && dx2 === 1 && dy2 === 1)) && (cr - r1) * (c2 - cc) !== (cc - c1) * (r2 - cr)) {
+                                if (hasBuff('行云流水')) return true;
+                                if (grid[cr][cc] === null) return true;
+                            }
+                        }
+                    } return false;
+                case 'fire':
+                    if (dx === 0 || dy === 0) {
+                        const dist = Math.max(dx, dy);
+                        if (hasBuff('星火燎原')) {
+                            let cnt = 0; for (let pt of getPathPoints(r1, c1, r2, c2)) { if (grid[pt.r][pt.c]) cnt++; }
+                            if (dist >= 1 && dist <= 2 && cnt === 0) return true;
+                            if (dist >= 2 && dist <= 4 && cnt === 1) return true;
+                            return false;
+                        }
+                        if (dist === 1) return true;
+                        if (dist >= 2 && dist <= 3) { let cnt = 0; for (let pt of getPathPoints(r1, c1, r2, c2)) { if (grid[pt.r][pt.c]) cnt++; } return cnt === 1; }
+                    } return false;
+                case 'earth':
+                    if (hasBuff('缩地成寸')) {
+                        if (dx > 0 && dx === dy && dx <= 3) {
+                            let jumpCount = 0;
+                            for (let pt of getPathPoints(r1, c1, r2, c2)) { if (grid[pt.r][pt.c]) jumpCount++; }
+                            return jumpCount <= 1;
+                        }
+                        return false;
+                    }
+                    return (dx > 0 && dx === dy && dx <= 2 && isPathClear(getPathPoints(r1, c1, r2, c2)));
+                case 'yin': case 'yang':
+                    // 颠倒幾坤：被赋予吃子能力的阴阳棋可到达敌方棋子位置
+                    if (p.yinYangCanKill) return (dx + dy === 1 && (target === null || (target && target.color !== p.color)));
+                    return (dx + dy === 1 && target === null);
                 default: return false;
             }
         }
@@ -760,21 +2194,86 @@
             document.getElementById('reserve-yang').classList.toggle('selected', selectedReserve === 'yang');
         }
 
-        function selectIntersection(r, c) {
+        async function selectIntersection(r, c) {
             if (myRoom && currentPlayer !== myRole) { console.log("Not your turn!"); return; }
+
+            // 若有选中卡牌，判断是否需要点击目标
+            if (selectedCard) {
+                const card = cardState[selectedCard.color].hand[selectedCard.index];
+                if (card && card.id === '偷天换日') {
+                    // 偷天换日双目标处理
+                    if (!pendingSwapPiece) {
+                        if (!grid[r][c]) { alert('「偷天换日」：请先点击己方任意棋子（第一枚）！'); return; }
+                        pendingSwapPiece = { r, c };
+                        document.getElementById('card-action-info').textContent = '「偷天换日」：已选第一枚棋，请点击第二枚棋子完成换位！';
+                    } else {
+                        useSelectedCard(pendingSwapPiece, { swap2: { r, c } });
+                        pendingSwapPiece = null;
+                    }
+                    renderBoard(); return;
+                }
+                if (card && CARDS_REQUIRE_TARGET.includes(card.id)) {
+                    useSelectedCard({ r, c });
+                    renderBoard();
+                } else {
+                    alert(`「${card ? card.name : ''}」不需要点击棋盘目标，全体生效。请点击卡牌上方的【发动】按钮！\n若您想执行正常落子/移动，请先再次点击此卡取消选中。`);
+                }
+                return;
+            }
+
+            // 【行棋拦截】棋子行动的封口检查
+            if (actionBlockedThisTurn) {
+                alert("本回合已被牌効限制，无法执行棋子行动！可继续出牌或结束回合。");
+                return;
+            }
+            if (actionDoneThisTurn) {
+                alert("本回合已经行棋过了！可继续出牌或结束回合。");
+                return;
+            }
+
             const target = grid[r][c];
             if (selectedReserve) {
                 if (target !== null) return;
+                
+                // 检查落子配额或使用「枯木逢春」额外权限
+                let usingExtraRight = false;
                 if (roundCount <= 10) {
-                    if (playerActionCounts[currentPlayer].drop >= 5) { alert("落子配额已满！"); return; }
-                    // 【中线限制】
-                    if (currentPlayer === 'black' && r > 4) { alert("前10回合落子不能超过中线！"); return; }
-                    if (currentPlayer === 'white' && r < 4) { alert("前10回合落子不能超过中线！"); return; }
+                    if (playerActionCounts[currentPlayer].drop >= 5) {
+                        // 如果配额耗尽，检查是否有枯木逢春的额外权利 (必须是落阴或阳，且有气)
+                        if (extraYinYangRights[currentPlayer] > 0 && (selectedReserve === 'yin' || selectedReserve === 'yang')) {
+                            if (playerVitality[currentPlayer] < 2) {
+                                alert("「枯木逢春」额外落子需要支付2点气血！当前气血不足。");
+                                return;
+                            }
+                            const confirmCost = confirm("落子配额已满！是否消耗「枯木逢春」带来的额外权利并支付 2 点气血强行落子？");
+                            if (!confirmCost) return;
+                            usingExtraRight = true;
+                        } else {
+                            alert("落子配额已满！");
+                            return;
+                        }
+                    }
+                    // 【中线限制】黑方起于底部(row8)，不能越过中线到 row<4；白方起于顶部(row0)，不能越过中线到 row>4
+                    if (currentPlayer === 'black' && r < 4) { alert("前10回合落子不能超过中线！"); return; }
+                    if (currentPlayer === 'white' && r > 4) { alert("前10回合落子不能超过中线！"); return; }
                 }
-                const act = { r, c, type: selectedReserve, color: currentPlayer };
+
+                const act = { r, c, type: selectedReserve, color: currentPlayer, usingExtraRight };
                 if (sendActionToServer('drop', act)) return;
+
+                // 扣费或扣配额
+                if (usingExtraRight) {
+                    extraYinYangRights[currentPlayer]--;
+                    playerVitality[currentPlayer] -= 2;
+                } else {
+                    playerActionCounts[currentPlayer].drop++;
+                }
+
                 grid[r][c] = { type: selectedReserve, color: currentPlayer, symbol: getSymbolByType(selectedReserve), isRevealed: true };
-                playerActionCounts[currentPlayer].drop++; resolveCaptures(r, c, currentPlayer); switchTurn();
+                resolveCaptures(r, c, currentPlayer);
+                updateVitalityDisplay();
+                renderBoard();
+                setPhase('post_card'); // 棋子行动完成直接进第三阶段
                 return;
             }
             if (target && !target.isRevealed && target.type !== 'yin' && target.type !== 'yang') {
@@ -782,15 +2281,29 @@
                 if (roundCount <= 10 && playerActionCounts[currentPlayer].reveal >= 5) { alert("揭开配额已满！"); return; }
                 const act = { r, c, mover_color: currentPlayer };
                 if (sendActionToServer('reveal', act)) return;
-                target.isRevealed = true; playerActionCounts[currentPlayer].reveal++; resolveCaptures(r, c, currentPlayer); switchTurn();
+                target.isRevealed = true; playerActionCounts[currentPlayer].reveal++; resolveCaptures(r, c, currentPlayer);
+                updateVitalityDisplay();
+                renderBoard();
+                setPhase('post_card'); // 棋子行动完成直接进第三阶段
                 return;
             }
             if (selectedPos) {
                 const p = grid[selectedPos.r][selectedPos.c];
+                // 借尸还魂：虚弱期拦截
+                if (p && p.justRevived) {
+                    alert("该棋子刚通过「借尸还魂」重返战场，正处于虚弱期，本回合无法行动！");
+                    clearSelection(); renderBoard(); return;
+                }
+                // 乘胜追击：触发后只有授权棋子可行动
+                if (extraActionPiece && (selectedPos.r !== extraActionPiece.r || selectedPos.c !== extraActionPiece.c)) {
+                    document.getElementById('info').textContent = '【乘胜追击】只能选择该授权棋子继续行动！';
+                    selectedPos = extraActionPiece; renderBoard(); return;
+                }
                 if (canMove(p, selectedPos, { r, c })) {
                     if (target && target.color === currentPlayer) { selectedPos = { r, c }; renderBoard(); return; }
                     if (sendActionToServer('move', { from: selectedPos, to: { r, c } })) return;
-                    executeMove(selectedPos, { r, c });
+                    if (extraActionPiece) extraActionPiece = null; // 消耗额外行动
+                    await executeMove(selectedPos, { r, c });
                 } else if (target && target.color === currentPlayer && target.isRevealed) { selectedPos = { r, c }; renderBoard(); }
                 else { clearSelection(); renderBoard(); }
             } else if (target && target.color === currentPlayer && target.isRevealed) {
@@ -825,6 +2338,10 @@
             const el = document.createElement('div');
             const isH = (pData.type !== 'yin' && pData.type !== 'yang' && !pData.isRevealed);
             el.className = `piece ${isH ? 'hidden' : pData.type} ${pData.color}`;
+            if (pData.buffs && pData.buffs.length > 0) {
+                el.classList.add('buffed-piece');
+                el.title = `已被强化: ${pData.buffs.join('、')}`;
+            }
             el.textContent = isH ? '?' : pData.symbol;
             if (!isH) {
                 const en = document.createElement('div'); en.className = 'piece-energy';
@@ -837,27 +2354,59 @@
         function resolveCaptures(movedR, movedC, moverColor) {
             const opp = moverColor === 'black' ? 'white' : 'black';
             let changed = false;
+
+            // --- 第一步：扫描所有敌方棋子，收集需删除的 group（先收集，后删除，避免边改边扫）---
+            const processedCells = new Set();
+            const toCapture = [];
             for (let r = 0; r < boardSize; r++) {
                 for (let c = 0; c < boardSize; c++) {
+                    const key = `${r},${c}`;
+                    if (processedCells.has(key)) continue;
                     const p = grid[r][c];
                     if (p && p.color === opp && (p.isRevealed || p.type === 'yin' || p.type === 'yang')) {
                         const g = getConnectedGroup(r, c);
-                        if (countLiberties(g) === 0) {
-                            g.forEach(cell => {
-                                const target = grid[cell.r][cell.c];
-                                if (target && target.type !== 'yin' && target.type !== 'yang') playerVitality[target.color] -= initialEnergyMap[target.type];
-                                grid[cell.r][cell.c] = null;
-                            });
-                            changed = true;
-                        }
+                        g.forEach(cell => processedCells.add(`${cell.r},${cell.c}`));
+                        if (countLiberties(g) === 0) { toCapture.push(g); }
                     }
                 }
             }
+            // --- 第二步：批量删除 ---
+            for (const g of toCapture) {
+                g.forEach(cell => {
+                    const target = grid[cell.r][cell.c];
+                    if (target) {
+                        if (target.type !== 'yin' && target.type !== 'yang') {
+                            playerVitality[target.color] -= initialEnergyMap[target.type];
+                            // 检查枯木逢春
+                            if (cardState[target.color].field.some(c => c.id === '枯木逢春')) {
+                                extraYinYangRights[target.color]++;
+                            }
+                            deadPieces[target.color].fiveElements.push({ type: target.type, symbol: target.symbol, originalEnergy: initialEnergyMap[target.type] });
+                        } else {
+                            deadPieces[target.color][target.type]++;
+                        }
+                    }
+                    grid[cell.r][cell.c] = null;
+                });
+                changed = true;
+            }
+            // --- 第三步：检查落子方自杀 ---
             const myG = getConnectedGroup(movedR, movedC);
             if (myG.length > 0 && countLiberties(myG) === 0) {
                 myG.forEach(cell => {
                     const target = grid[cell.r][cell.c];
-                    if (target && target.type !== 'yin' && target.type !== 'yang') playerVitality[target.color] -= initialEnergyMap[target.type];
+                    if (target) {
+                        if (target.type !== 'yin' && target.type !== 'yang') {
+                            playerVitality[target.color] -= initialEnergyMap[target.type];
+                            // 检查枯木逢春
+                            if (cardState[target.color].field.some(c => c.id === '枯木逢春')) {
+                                extraYinYangRights[target.color]++;
+                            }
+                            deadPieces[target.color].fiveElements.push({ type: target.type, symbol: target.symbol, originalEnergy: initialEnergyMap[target.type] });
+                        } else {
+                            deadPieces[target.color][target.type]++;
+                        }
+                    }
                     grid[cell.r][cell.c] = null;
                 });
                 changed = true;
@@ -901,20 +2450,1303 @@
             return libs.size;
         }
 
-        function executeMove(from, to) {
+        async function executeMove(from, to) {
             const p = grid[from.r][from.c]; if (!p) return;
             const aE = calculateEnergy(from.r, from.c), t = grid[to.r][to.c];
+            let captureEvent = null;
             if (t) {
                 const dC = t.color, dE = calculateEnergy(to.r, to.c);
+                let diffDamage = 0;
+                // 偷梁换柱：使用临时元素覆盖进行克制判断
+                const pElem = p.tempElement || p.type;
+                const tElem = t.tempElement || t.type;
                 if (t.type !== 'yin' && t.type !== 'yang') playerVitality[dC] -= initialEnergyMap[t.type];
-                if (OVERCOMES[p.type] === t.type || p.type === t.type) {
-                    if (aE > dE) playerVitality[dC] -= (aE - dE);
-                    else if (p.type === t.type && dE > aE) playerVitality[p.color] -= (dE - aE);
+                if (OVERCOMES[pElem] === tElem || pElem === tElem || (p.type === 'yin' || p.type === 'yang')) {
+                    if (aE > dE) { diffDamage = aE - dE; playerVitality[dC] -= diffDamage; }
+                    else if (pElem === tElem && dE > aE) playerVitality[p.color] -= (dE - aE);
+                }
+                // 记录吃子事件（用于反制卡触发条件）
+                if (t.type !== 'yin' && t.type !== 'yang') {
+                    captureEvent = {
+                        attackerType: p.type, attackerColor: p.color,
+                        defenderType: t.type, defenderColor: t.color,
+                        attackerPos: { r: to.r, c: to.c },
+                        diffDamage
+                    };
+                    thisTurnCaptureEvents.push(captureEvent);
+                }
+                // 登峰造极：吃掉敌方五行棋子时回复 2 气
+                if (t.type !== 'yin' && t.type !== 'yang' && t.color !== p.color) {
+                    const dfBonus = (window.globalBuffs && window.globalBuffs[p.color + '_baseEnergyBonus']) || 0;
+                    if (dfBonus > 0) playerVitality[p.color] = Math.min(50, playerVitality[p.color] + 2);
+                }
+                // 含沙射影：被标记棋子被吃时，攻击方棋子永久内气-2
+                if (t.hasTrap && t.type !== 'yin' && t.type !== 'yang') {
+                    p.permEnergyDebuff = (p.permEnergyDebuff || 0) - 2;
+                    console.log(`[含沙射影] 陷阱触发！攻击方棋子永久内气-2`);
+                }
+                // 以战养战：本回合场上有此效果卡时触发回气
+                const hasYZYZ = cardState[p.color].field.some(c => c.id === '以战养战');
+                if (hasYZYZ && t.type !== 'yin' && t.type !== 'yang' && t.color !== p.color) {
+                    const absEDiff = Math.abs(aE - dE);
+                    if (pElem === tElem) { // 同属性：回复差值绝对值
+                        playerVitality[p.color] = Math.min(50, playerVitality[p.color] + absEDiff);
+                    } else if (OVERCOMES[pElem] === tElem && aE > dE) { // 克制且我方内气更高
+                        playerVitality[p.color] = Math.min(50, playerVitality[p.color] + absEDiff);
+                    }
+                }
+                // 记录死子（借尸还魂 / 枯木逢春用）
+                if (t.type !== 'yin' && t.type !== 'yang') {
+                    deadPieces[t.color].fiveElements.push({ type: t.type, symbol: t.symbol, originalEnergy: initialEnergyMap[t.type] });
+                    // 枯木逢春：对方吃我方五行棋时，我方获得额外阴阳落点权利
+                    if (cardState[t.color].field.some(c => c.id === '枯木逢春') && t.color !== p.color) {
+                        extraYinYangRights[t.color]++;
+                    }
+                } else {
+                    deadPieces[t.color][t.type]++;
+                }
+                
+                // 彻底清理死亡棋子的临时状态，防止带入墓地重采样冲突
+                delete t.buffs;
+                delete t.tempElement;
+                delete t.frozen;
+                delete t.tempEnergyMod;
+                delete t.yinYangCanKill;
+                delete t.yinYangMod;
+                delete t.yinYangFieldMult;
+                delete t.justRevived;
+                delete t.hasTrap;
+                // 乘胜追击：相克吃子时检查是否授予额外行动
+                const hasCSZJ = cardState[p.color].field.some(c => c.id === '乘胜追击');
+                if (hasCSZJ && OVERCOMES[pElem] === tElem && t.type !== 'yin' && t.type !== 'yang') {
+                    extraActionPiece = { r: to.r, c: to.c };
+                }
+
+                // ===== 反制卡连锁响应窗口 =====
+                // 在吃子结算后，给防守方一次使用反制卡的机会
+                if (captureEvent && !myRoom) {
+                    updateVitalityDisplay();
+                    renderBoard();
+                    await waitForCounterResponse(captureEvent, p.color);
                 }
             }
             grid[to.r][to.c] = p; grid[from.r][from.c] = null; resolveCaptures(to.r, to.c, p.color);
-            clearSelection(); switchTurn();
+            clearSelection();
+            updateVitalityDisplay();
+            renderBoard();
+            // 乘胜追击：若已获授权额外行动则保持行棋阶段；否则进入行棋后阶段
+            if (extraActionPiece) {
+                document.getElementById('info').textContent = `【乘胜追击】该棋子获得额外一次行动！点击该棋子继续行动。`;
+                // 不调用 setPhase('post_card')，让玩家继续选择
+            } else {
+                setPhase('post_card');
+            }
         }
+
+
+        // ===== 卡牌系统 =====
+        const CARD_DATA = [
+            { id: '无坚不摧', name: '无坚不摧', type: 'active', cost: 1, dur: 'permanent', icon: '⚔️', desc: '赋予己方一枚【金】棋永久强化：移动步长上限由3提升至4；路径上遇到首个阻挡时，若为己方/阴阳/隐匿棋可跳过，若为敌方已揭开棋子可选择跳过或就地吃掉（正常结算伤害差值）。' },
+            { id: '星火燎原', name: '星火燎原', type: 'active', cost: 1, dur: 'permanent', icon: '🔥', desc: '赋予己方一枚【火】棋永久强化：跳跃（炮架）最大跨度由3提升至4（即跨度2-4格）；普通直线平移由最多1步提升至最多2步（路线不可有阻挡）。' },
+            { id: '移花接木', name: '移花接木', type: 'active', cost: 1, dur: 'permanent', icon: '🌿', desc: '赋予己方一枚【木】棋永久强化：在原L形折线移动基础上，额外允许沿起点与终点的对角连线移动；路径上允许存在最多1个任意棋子并直接跳过。' },
+            { id: '行云流水', name: '行云流水', type: 'active', cost: 1, dur: 'permanent', icon: '💧', desc: '赋予己方一枚【水】棋永久强化：移除"折点所在格必须为空"的限制，无论折点是否有棋子均可用作踏板越过。' },
+            { id: '缩地成寸', name: '缩地成寸', type: 'active', cost: 1, dur: 'permanent', icon: '🗻', desc: '赋予己方一枚【土】棋永久强化：对角线最大步长由2提升至3；路径上遇首个阻挡时，己方/阴阳/隐匿棋可跳过，敌方已揭开棋子可选择就地吃掉或继续跳过。' },
+            { id: '乘胜追击', name: '乘胜追击', type: 'active', cost: 3, dur: 'turn', icon: '⚡', desc: '【触发条件】本回合我方五行棋子执行吃子，且吃掉的是被其属性克制的敌方棋子（产生相克结算）时——该棋子立刻获得额外一次行动机会（可再移动或吃子）。每枚棋子每回合限触发一次。' },
+            { id: '以战养战', name: '以战养战', type: 'active', cost: 0, dur: 'turn', icon: '🩸', desc: '本回合我方棋子吃掉同名（同属性）敌方棋子时，立刻回复双方内气之差的绝对值气血；吃掉被克制棋子时，仅当我方内气高于对方才回复气值差。费用0，附带触发条件。' },
+            { id: '暗度陈仓', name: '暗度陈仓', type: 'active', cost: 2, dur: 'instant', icon: '🎭', desc: '仅限己方回合开始时。由我方盲选指定敌方手牌中1张将其丢弃。代价：本回合我方无法再执行任何棋子行动（移动/吃子/翻牌），但依然可以发动其他卡牌。' },
+            { id: '探囊取物', name: '探囊取物', type: 'active', cost: 3, dur: 'instant', icon: '🔍', desc: '仅限己方回合内使用。从己方牌库手动检索任意1张指定卡牌加入手牌（须向对方展示）。检索后剩余牌库必须重新洗牌。' },
+            { id: '斗转星移', name: '斗转星移', type: 'active', cost: 2, dur: 'instant', icon: '🌀', desc: '仅限己方回合开始时首个动作。将手牌中任意数量卡牌洗回牌库，从牌库抽取相同数量卡牌。代价：本回合无法执行任何棋子行动，但依然可以发动其他卡牌。' },
+            { id: '借尸还魂', name: '借尸还魂', type: 'active', cost: 3, dur: 'instant', icon: '💀', desc: '消耗等同于复活棋子初始内气值的气血。献祭己方1枚阴阳棋子（立刻死亡），在其原位置复活己方1枚已死亡的五行棋子。复活当回合该棋子无法执行任何移动或吃子行动。' },
+            { id: '破釜沉舟', name: '破釜沉舟', type: 'active', cost: 5, dur: 'turn', icon: '🎰', desc: '本回合内，我方后续发动的所有卡牌均不立刻扣除气耗，将被记账。下一个我方回合开始时强制一次性扣除全部欠款。极端"拼命卡"，爆展后若未斩杀对手，极有可能欠款归零输掉比赛。' },
+            { id: '噤若寒蝉', name: '噤若寒蝉', type: 'active', cost: 4, dur: 'turn', icon: '🔒', desc: '己方回合开始时，牺牲本回合所有棋子行动权，换取接下来的敌方回合内绝对禁卡——敌方无法发动任何卡牌（主动/即时/反制）。可与其他卡牌叠加使用。' },
+            { id: '玉石俱焚', name: '玉石俱焚', type: 'counter', cost: 2, dur: 'instant', icon: '💥', desc: '【响应条件】敌方本回合用五行棋吃掉我方同属性（同名）五行棋。强制改变结果：无论内气差距，令敌方发起吃子的那枚棋子也同归于尽（移出棋盘）。差值气耗正常结算，不撤销。' },
+            { id: '偷天换日', name: '偷天换日', type: 'counter', cost: 2, dur: 'instant', icon: '🔄', desc: '【响应条件】敌方本回合吃掉我方五行棋后。此卡能瞒天过海，立刻指定己方场上任意两枚棋子，将它们的落点位置互换。用于强行调遣强棋奇袭前线，或保护核心免遭下一轮攻击。' },
+            { id: '生生不息', name: '生生不息', type: 'counter', cost: 0, dur: 'instant', icon: '♻️', desc: '【响应条件】敌方本回合用五行棋吃掉我方"生它的棋子"（如：敌方火吃我方木，木生火）。触发即立刻回复2点气血。被吃棋子的气耗正常扣除，此2点为额外补偿。' },
+            { id: '以柔克刚', name: '以柔克刚', type: 'counter', cost: 3, dur: 'instant', icon: '🛡️', desc: '【响应条件】敌方本回合吃掉我方棋子，且因其内气高于我方棋子产生了额外差值伤害。触发后：我方立刻回复该差值气血，并将等量伤害反弹给敌方（敌方扣除同等气血）。' },
+            { id: '枯木逢春', name: '枯木逢春', type: 'counter', cost: 2, dur: 'permanent', icon: '🌱', desc: '【响应条件】敌方本回合吃掉我方至少1枚五行棋。打出后永久留存：此后只要敌方每吃掉我方1枚五行棋，在紧接着的下一个我方回合额外获得1次"落子阴阳棋"的权利，但每次行使须强制支付2点气。' },
+            { id: '遗泽后世', name: '遗泽后世', type: 'counter', cost: 2, dur: 'instant', icon: '📜', desc: '【响应条件】敌方本回合吃掉我方任意1枚五行棋。触发后我方立刻从牌库顶端抽取1张手牌。将战场损失转化为手牌资源，任何流派皆可使用的万能补偿卡。' },
+            { id: '颠倒乾坤', name: '颠倒乾坤', type: 'instant', cost: 2, dur: 'turn', icon: '☯️', desc: '双方回合开始或结束前均可。指定己方1枚阴阳棋子，在这一完整双边回合内临时赋予其吃子能力——移动到敌方棋子格时可直接吃掉，以"无关系"普通互吃结算（扣基础内气，不扣差值）。' },
+            { id: '此消彼长', name: '此消彼长', type: 'instant', cost: 1, dur: 'turn', icon: '⚖️', desc: '双方回合开始或结束前均可。二选一：①己方调和：指定己方1枚阴阳棋，内气由1变为2，周围场效修正由±1变为±2。②敌方压制：指定敌方1枚阴阳棋，内气由1变为0，临时封印其周围场效。' },
+            { id: '徒劳无功', name: '徒劳无功', type: 'instant', cost: 3, dur: 'instant', icon: '🚫', desc: '当敌方发动任何卡牌时可立刻连锁。使该卡效果完全失效（进入弃牌堆，不产生任何影响）。敌方原本应支付的气耗依然被扣除。我方支付3点气执行无效化，骗掉对方资源与卡牌。' },
+            { id: '登峰造极', name: '登峰造极', type: 'instant', cost: 5, dur: 'permanent', icon: '👑', desc: '双方回合开始或结束前均可。全军共鸣：己方所有五行棋子基础内气永久+1（含未来翻开的新棋子）。此后己方每吃掉敌方1枚五行棋，立刻额外回复2点气血。高投入换取全场后期压制力。' },
+            { id: '无中生有', name: '无中生有', type: 'instant', cost: 2, dur: 'instant', icon: '🎴', desc: '双方回合开始或结束前均可。自由选择支付1~3点气，从牌库抽取相同张数加入手牌，抽完后必须从手牌弃掉相同数量的卡牌。以气为代价强行进行滤抽，急寻关键卡时的必备手段。' },
+            { id: '画地为牢', name: '画地为牢', type: 'instant', cost: 3, dur: 'turn', icon: '⛓️', desc: '双方回合开始或结束前均可。指定敌方1枚已揭开的五行棋子，在这一完整双边回合内，该棋子完全无法被指定移动或攻击（钉死原地）。但其场效依然有效，且依然可被我方攻击吃掉。' },
+            { id: '偷梁换柱', name: '偷梁换柱', type: 'instant', cost: 2, dur: 'turn', icon: '🎪', desc: '双方回合开始或结束前均可。指定任意一方1枚已揭开的五行棋子，附加一个临时额外属性。本回合吃子对抗中，优先且强制使用此额外属性计算相生相克。可强化己方克制/陷害敌方被反克。' },
+            { id: '聚散浮沉', name: '聚散浮沉', type: 'instant', cost: 4, dur: 'turn', icon: '💎', desc: '双方回合开始或结束前均可。二选一：①聚（强化己方）：指定己方1枚已揭开五行棋，本回合基础内气临时+2。②散（削弱敌方）：指定敌方1枚已揭开五行棋，本回合基础内气临时-2（内气≤0时极易被吃）。' },
+            { id: '含沙射影', name: '含沙射影', type: 'instant', cost: 2, dur: 'turn', icon: '🗡️', desc: '双方回合开始或结束前均可。秘密指定己方1枚棋子附上暗记（对敌方完全隐藏）。当该棋子被敌方任意五行棋吃掉时，陷阱触发：吃掉它的敌方棋子基础内气永久减2（可减至0，极度残废）。' },
+        ];
+
+        let cardState = {
+            black: { deck: [], hand: [], graveyard: [], field: [] },
+            white: { deck: [], hand: [], graveyard: [], field: [] }
+        };
+        let selectedCard = null; // { color, index }
+
+        const CARDS_REQUIRE_TARGET = [
+            '无坚不摧', '星火燎原', '移花接木', '行云流水', '缩地成寸',
+            '借尸还魂', '偷天换日', '颠倒乾坤', '此消彼长',
+            '画地为牢', '偷梁换柱', '聚散浮沉', '含沙射影'
+        ];
+
+        async function invokeSelectedCard() {
+            if (!selectedCard) return;
+            const card = cardState[selectedCard.color].hand[selectedCard.index];
+            if (!card) return;
+
+            // 时机校验：暗度陈仓 & 斗转星移 只能在未行棋前使用
+            if (card.id === '暗度陈仓' && actionDoneThisTurn) {
+                alert('「暗度陈仓」必须在本回合行棋前使用！');
+                return;
+            }
+            if (card.id === '斗转星移' && (cardsPlayedThisTurn > 0 || actionDoneThisTurn)) {
+                alert('「斗转星移」必须在本回合行棋前且为本回合第一个动作！');
+                return;
+            }
+
+            if (CARDS_REQUIRE_TARGET.includes(card.id)) {
+                // 需要目标，引流到棋盘点击
+                const info = document.getElementById('card-action-info');
+                info.textContent = `【待点选目标】已准备发动「${card.name}」，请直接在上方棋盘点击目标所在格子！`;
+                info.style.color = '#ffca28';
+                return; // 重要修复：拦截掉后续执行，等待玩家点击棋盘调用 selectIntersection
+            }
+
+            let options = {};
+            // 不需要点场上目标，全场生效/抽牌卡等
+            if (card.id === '无中生有') {
+                const costStr = prompt(`请输入要消耗的内气值(1~3)用于「无中生有」抽/弃牌数：`, "2");
+                if (costStr === null) return;
+                const cVal = parseInt(costStr);
+                if (isNaN(cVal) || cVal < 1 || cVal > 3) {
+                    alert("输入无效，必须是1~3之间的整数！"); return;
+                }
+                if (playerVitality[selectedCard.color] < cVal) {
+                    alert("内气不足！"); return;
+                }
+                options.wzsyCost = cVal;
+            } else {
+                if (!confirm(`确定要直接点燃气血，发动无目标卡牌「${card.name}」吗？`)) return;
+            }
+
+            await useSelectedCard(null, options);
+        }
+
+        function shuffleArr(arr) {
+            const a = [...arr];
+            for (let i = a.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [a[i], a[j]] = [a[j], a[i]];
+            }
+            return a;
+        }
+
+        function initCardDecks() {
+            // 每种卡牌仅限1张，共28张；双方牌组内容相同，各自独立洗牌
+            const makeDeck = () => shuffleArr([...CARD_DATA]);
+            for (const c of ['black', 'white']) {
+                cardState[c] = { deck: makeDeck(), hand: [], graveyard: [], field: [] };
+            }
+            // 初始各抽5张
+            for (let i = 0; i < 5; i++) { drawCard('black'); drawCard('white'); }
+            renderCardZones();
+        }
+
+        function drawCard(color) {
+            if (cardState[color].deck.length === 0) return null;
+            const card = cardState[color].deck.shift();
+            cardState[color].hand.push(card);
+            return card;
+        }
+
+        /**
+         * 判断某张卡是否"当前可激活"（用于高亮显示）
+         */
+        function isCardActivatable(card, color) {
+            // 基础限制1：气值是否足够
+            if (playerVitality[color] < card.cost) return false;
+
+            const opp = color === 'black' ? 'white' : 'black';
+            const isMyTurn = (color === currentPlayer);
+
+            // 基础限制2：Active 卡只能在自己回合发动
+            if (card.type === 'active' && !isMyTurn) return false;
+
+            // ── A. 反制卡（Counter） ──
+            if (card.type === 'counter') {
+                // 判断是否在吃子连锁窗口期间
+                if (!counterWindowOpen || !counterWindowEvent) return false;
+                const ev = counterWindowEvent;
+                if (ev.defenderColor !== color) return false; // 必须是我方被吃
+                
+                if (card.id === '偷天换日') {
+                    // 需要被吃的是五行棋，且场上有至少2枚己方棋子才能互换
+                    if (ev.defenderType === 'yin' || ev.defenderType === 'yang') return false;
+                    let count = 0;
+                    for (const row of grid) for (const p of row) if (p && p.color === color) { count++; if (count >= 2) return true; }
+                    return false;
+                }
+                if (card.id === '玉石俱焚') return ev.attackerType === ev.defenderType;
+                if (card.id === '生生不息') return GENERA[ev.defenderType] === ev.attackerType;
+                if (card.id === '以柔克刚') return ev.diffDamage > 0;
+                if (card.id === '枯木逢春' || card.id === '遗泽后世') return true;
+                return false;
+            }
+
+            // ── B. 徒劳无功（Instant 连锁对方卡牌） ──
+            // 这是用来阻挡对方卡牌的，目前自己回合面板不该主动亮起（依赖 waitForOpponentResponse 被动连锁）
+            if (card.id === '徒劳无功') return false;
+
+            // ── C. 时机限制与目标限制（Active / Instant） ──
+            
+            // 1) "仅限己方回合开始/未行棋时"：暗度陈仓、斗转星移、噤若寒蝉
+            if (['暗度陈仓', '斗转星移', '噤若寒蝉'].includes(card.id)) {
+                if (!isMyTurn || actionDoneThisTurn) return false;
+                if (card.id === '斗转星移' && (cardsPlayedThisTurn > 0 || cardState[color].hand.length < 2)) return false;
+                return true;
+            }
+
+            // 2) "本回合己方吃子后"：乘胜追击、以战养战
+            if (['乘胜追击', '以战养战'].includes(card.id)) {
+                if (!isMyTurn) return false;
+                if (card.id === '乘胜追击') {
+                    return thisTurnCaptureEvents.some(e => e.attackerColor === color && OVERCOMES[e.attackerType] === e.defenderType);
+                }
+                if (card.id === '以战养战') {
+                    return thisTurnCaptureEvents.some(e => e.attackerColor === color);
+                }
+            }
+
+            // 3) 五行专属强化卡：己方需有对应五行且已揭开的棋子在场
+            const elemReq = { '无坚不摧': 'metal', '星火燎原': 'fire', '移花接木': 'wood', '行云流水': 'water', '缩地成寸': 'earth' };
+            if (elemReq[card.id]) {
+                const reqType = elemReq[card.id];
+                return grid.some(row => row.some(p => p && p.color === color && p.type === reqType && p.isRevealed));
+            }
+
+            // 4) 目标必须是【敌方已揭开五行棋子】：画地为牢、聚散浮沉(敌方)
+            // 聚散浮沉可指自己也可指敌方，所以下放至"任意"
+            if (card.id === '画地为牢') {
+                return grid.some(row => row.some(p => p && p.color === opp && p.isRevealed && p.type !== 'yin' && p.type !== 'yang'));
+            }
+
+            // 5) 目标必须是【任意已揭开五行棋子】：偷梁换柱、聚散浮沉
+            if (card.id === '偷梁换柱' || card.id === '聚散浮沉') {
+                return grid.some(row => row.some(p => p && p.isRevealed && p.type !== 'yin' && p.type !== 'yang'));
+            }
+
+            // 6) 借尸还魂：需献祭己方阴阳棋 + 墓地需有本方死亡棋子
+            if (card.id === '借尸还魂') {
+                const hasDead = deadPieces[color].length > 0;
+                const hasYY = grid.some(row => row.some(p => p && p.color === color && (p.type === 'yin' || p.type === 'yang')));
+                return hasDead && hasYY;
+            }
+
+            // 7) 含沙射影：需要暗记己方任意棋子
+            if (card.id === '含沙射影') {
+                return grid.some(row => row.some(p => p && p.color === color));
+            }
+
+            // 8) 探囊取物：己方牌库有牌
+            if (card.id === '探囊取物') {
+                if (!isMyTurn) return false;
+                return cardState[color].deck.length > 0;
+            }
+
+            // 9) 颠倒乾坤：指定己方阴阳棋子
+            if (card.id === '颠倒乾坤') {
+                return grid.some(row => row.some(p => p && p.color === color && (p.type === 'yin' || p.type === 'yang')));
+            }
+
+            // 10) 此消彼长：指定任意阴阳棋子
+            if (card.id === '此消彼长') {
+                return grid.some(row => row.some(p => p && (p.type === 'yin' || p.type === 'yang')));
+            }
+
+            // 其余无特殊盘面目标限制的卡牌：无中生有、登峰造极、破釜沉舟
+            if (['无中生有', '破釜沉舟', '登峰造极'].includes(card.id)) {
+                return true; 
+            }
+
+            return false;
+        }
+
+        function renderCardZones() {
+            for (const color of ['black', 'white']) {
+                const cs = cardState[color];
+                // 牌库 / 墓地 计数
+                const de = document.getElementById(`deck-count-${color}`);
+                if (de) de.textContent = cs.deck.length;
+                const ge = document.getElementById(`grave-count-${color}`);
+                if (ge) ge.textContent = cs.graveyard.length;
+
+                // 手牌区
+                const handEl = document.getElementById(`hand-${color}`);
+                if (!handEl) continue;
+                handEl.innerHTML = '';
+                // 判断是否为自己的牌（联网时只有myRole能看正面，本地模式两方都正面）
+                const showFace = !myRoom || color === myRole;
+                cs.hand.forEach((card, idx) => {
+                    if (!showFace) {
+                        const back = document.createElement('div');
+                        back.className = 'hand-card-back';
+                        back.title = '对手手牌';
+                        handEl.appendChild(back);
+                    } else {
+                        const el = document.createElement('div');
+                        const isActivatable = color === currentPlayer && isCardActivatable(card, color);
+                        el.className = `hand-card card-${card.type}${isActivatable ? ' card-activatable' : ''}`;
+                        if (selectedCard && selectedCard.color === color && selectedCard.index === idx) {
+                            el.classList.add('selected-card');
+                            const invokeBtn = document.createElement('button');
+                            invokeBtn.className = 'invoke-btn';
+                            invokeBtn.textContent = '发动';
+                            invokeBtn.onclick = (e) => { e.stopPropagation(); invokeSelectedCard(); };
+                            el.appendChild(invokeBtn);
+                        }
+                        el.title = `${card.name}：${card.desc}`;
+
+                        const costEl = document.createElement('div');
+                        costEl.className = 'hand-card-cost';
+                        costEl.textContent = card.cost;
+
+                        const iconEl = document.createElement('div');
+                        iconEl.className = 'hand-card-icon';
+                        iconEl.textContent = card.icon;
+
+                        const nameEl = document.createElement('div');
+                        nameEl.className = 'hand-card-name';
+                        nameEl.textContent = card.name;
+
+                        const subEl = document.createElement('div');
+                        subEl.className = 'hand-card-subtype';
+                        subEl.textContent = card.type === 'active' ? '主动' : card.type === 'counter' ? '反制' : '即时';
+
+                        const descEl = document.createElement('div');
+                        descEl.className = 'hand-card-desc';
+                        descEl.textContent = card.desc;
+
+                        const zoomBtn = document.createElement('button');
+                        zoomBtn.className = 'card-zoom-btn';
+                        zoomBtn.textContent = '🔍';
+                        zoomBtn.title = '点击放大查看详情';
+                        zoomBtn.onclick = (e) => { e.stopPropagation(); openCardZoom(card); };
+
+                        el.appendChild(costEl);
+                        el.appendChild(iconEl);
+                        el.appendChild(nameEl);
+                        el.appendChild(subEl);
+                        el.appendChild(descEl);
+                        el.appendChild(zoomBtn);
+                        el.onclick = () => selectCard(color, idx);
+                        handEl.appendChild(el);
+                    }
+                });
+
+                // 效果区
+                const fieldEl = document.getElementById(`field-${color}`);
+                if (!fieldEl) continue;
+                const label = color === 'black' ? '黑方效果区' : '白方效果区';
+                fieldEl.innerHTML = `<span class="zone-field-label">${label}</span>`;
+                if (cs.field.length === 0) {
+                    fieldEl.innerHTML += '<span class="zone-field-empty">— 无持续效果 —</span>';
+                } else {
+                    cs.field.forEach(card => {
+                        const fc = document.createElement('div');
+                        fc.className = `field-card card-${card.type}`;
+                        fc.innerHTML = `
+                            <div class="fc-cost">${card.cost}</div>
+                            <div class="fc-icon">${card.icon}</div>
+                            <div class="fc-info">
+                                <div class="fc-name">${card.name}</div>
+                                <div class="fc-desc">${card.desc}</div>
+                            </div>
+                        `;
+                        // Hover时可以提供完整的放大提示
+                        fc.title = `【${card.name}】耗气:${card.cost}\n${card.desc}\n\n(点击可放大查看)`;
+                        fc.onclick = (e) => { e.stopPropagation(); openCardZoom(card); };
+                        fieldEl.appendChild(fc);
+                    });
+                }
+            }
+        }
+
+        function selectCard(color, idx) {
+            if (myRoom && color !== myRole) return;
+            if (color !== currentPlayer) {
+                document.getElementById('info').textContent = '现在不是你的回合！';
+                return;
+            }
+            // 噤若寒蝉封禁检查：对方的 field 是否有噤若寒蝉卡
+            const oppColorSc = color === 'black' ? 'white' : 'black';
+            if (cardState[oppColorSc].field.some(c => c.id === '噤若寒蝉')) {
+                document.getElementById('info').textContent = '对方「噤若寒蝉」封印尚在生效！本回合无法发动任何卡牌！';
+                return;
+            }
+
+            const card = cardState[color].hand[idx];
+            // 反制卡提示：通常在敌方吃子后自动弹出，如果手动选中，给出提示
+            if (card && card.type === 'counter') {
+                const useNow = confirm(`【反制卡】「${card.name}」通常在敌方吃子后的连锁窗口自动弹出。\n\n` +
+                    `您现在主动点击，是否直接发动？\n` +
+                    `确定 = 立即发动（需符合触发条件）\n取消 = 取消选牌`);
+                if (!useNow) { cancelCardSelection(); return; }
+                // 允许继续
+            }
+
+            // 点同一张取消
+            if (selectedCard && selectedCard.color === color && selectedCard.index === idx) {
+                cancelCardSelection(); return;
+            }
+            selectedCard = { color, index: idx };
+            selectedPos = null; selectedReserve = null;
+            renderReserves();
+            const info = document.getElementById('card-action-info');
+            info.style.color = '';
+            const reqStr = CARDS_REQUIRE_TARGET.includes(card.id) ? '需要点击棋盘目标' : '全场直接生效';
+            info.textContent = `已选「${card.name}」(耗${card.cost}气)[${reqStr}] | 请点击卡牌上方【发动】按钮`;
+            info.className = 'card-action-info visible';
+            renderCardZones();
+            renderBoard();
+        }
+
+        function cancelCardSelection() {
+            selectedCard = null;
+            const info = document.getElementById('card-action-info');
+            info.className = 'card-action-info';
+            info.style.color = '';
+            renderCardZones();
+        }
+
+        /**
+         * 连锁响应窗口：在发动卡牌效果结算前，给对方一次以「徒劳无功」连锁无效化的机会。
+         * @param {Object} activatedCard - 刚发动的卡牌对象
+         * @param {string} activatingColor - 发动方颜色
+         * @returns {Promise<boolean>} true = 被无效化，false = 正常结算
+         */
+        /**
+         * 弹出「徒劳无功」连锁无效化窗口（占位：对方发牌时）
+         * @param {Object} activatedCard - 刚发动的卡牌对象
+         * @param {string} activatingColor - 发动方额色
+         * @returns {Promise<boolean>} true = 被无效化，false = 正常结算
+         */
+
+        /**
+         * 吃子弹出的反制卡连锁响应窗口
+         * 在敌方吃子后，给防守方一次发动 counter 卡的机会。
+         * @param {Object} captureEvent - 吃子事件对象
+         * @param {string} attackerColor - 吃子方颜色（进攻方）
+         */
+        async function waitForCounterResponse(captureEvent, attackerColor) {
+            const defColor = captureEvent.defenderColor; // 防守方（将要用反制卡的一方）
+            const hand = cardState[defColor].hand;
+
+            // 过滤出手牌中可用的 counter 卡（类型为 counter，且气值充足，且触发条件匹配）
+            const usableCounters = hand
+                .map((c, idx) => ({ card: c, idx }))
+                .filter(({ card }) => {
+                    if (card.type !== 'counter') return false;
+                    if (playerVitality[defColor] < card.cost) return false;
+                    const ev = captureEvent;
+                    if (card.id === '玉石俱焚') return ev.attackerColor !== defColor && ev.defenderColor === defColor && ev.attackerType === ev.defenderType;
+                    if (card.id === '生生不息') return ev.attackerColor !== defColor && ev.defenderColor === defColor && GENERA[ev.defenderType] === ev.attackerType;
+                    if (card.id === '以柔克刚') return ev.attackerColor !== defColor && ev.defenderColor === defColor && ev.diffDamage > 0;
+                    if (card.id === '枯木逢春') return ev.attackerColor !== defColor && ev.defenderColor === defColor;
+                    if (card.id === '遗泽后世') return ev.attackerColor !== defColor && ev.defenderColor === defColor;
+                    if (card.id === '偷天换日') {
+                        if (ev.attackerColor === defColor || ev.defenderColor !== defColor) return false;
+                        if (ev.defenderType === 'yin' || ev.defenderType === 'yang') return false;
+                        let count = 0;
+                        for (const row of grid) for (const p of row) if (p && p.color === defColor) { count++; if (count >= 2) return true; }
+                        return false;
+                    }
+                    return false; // 其他 counter 卡不在吃子时弹窗
+                });
+
+            if (usableCounters.length === 0) return;
+
+            const defLabel = defColor === 'black' ? '黑方' : '白方';
+            const atkLabel = attackerColor === 'black' ? '黑方' : '白方';
+            const capTypeDesc = captureEvent.attackerType === captureEvent.defenderType ? '同属性吃子' :
+                OVERCOMES[captureEvent.attackerType] === captureEvent.defenderType ? '相克吃子' : '吃子';
+            const capDesc = `${atkLabel}【${capTypeDesc}】吃掉了${defLabel}的${captureEvent.defenderType}棋`;
+
+            const cardListText = usableCounters.map(({ card }) =>
+                `• 「${card.name}」(${card.cost}气): ${card.desc.slice(0, 28)}...`
+            ).join('\n');
+
+            const wantsToCounter = confirm(
+                `【⚡ 反制连锁窗口 ⚡】\n\n${capDesc}！\n\n${defLabel}持有以下可用反制卡：\n${cardListText}\n\n当前${defLabel}气值：${playerVitality[defColor]}\n\n确定(OK) = 打开反制卡选择界面\n取消(Cancel) = 放弃响应`
+            );
+            if (!wantsToCounter) return;
+
+            // 开启连锁窗口标志，让反制卡高亮
+            counterWindowOpen = true;
+            counterWindowEvent = captureEvent;
+            renderCardZones();
+
+            // 弹出选卡界面
+            const selected = await openCardSelectModal(
+                `${defLabel} 反制响应`,
+                `请选择你要发动的反制卡（可多选）`,
+                usableCounters.map(({ card }) => card),
+                -1, false
+            );
+            if (!selected || selected.length === 0) return;
+
+            // 临时将吃子事件注入 prevTurnCaptureEvents，让卡牌效果校验通过
+            const origPrev = prevTurnCaptureEvents;
+            prevTurnCaptureEvents = [captureEvent];
+
+            const origSelectedCard = selectedCard;
+
+            // 遍历玩家多选的反制卡，逐个发动
+            for (let selIdx of selected) {
+                const chosenEntry = usableCounters[selIdx];
+                if (!chosenEntry) continue;
+
+                const cardToUse = chosenEntry.card;
+                // 由于前面的卡牌发动会扣除手牌，此处必须重新查找该卡当前的索引
+                const currentIdx = cardState[defColor].hand.indexOf(cardToUse);
+                if (currentIdx !== -1) {
+                    selectedCard = { color: defColor, index: currentIdx };
+                    await useSelectedCard(null, {});
+                }
+            }
+
+            selectedCard = origSelectedCard;
+            prevTurnCaptureEvents = origPrev;
+
+            // 关闭连锁窗口标志，消除反制卡高亮
+            counterWindowOpen = false;
+            counterWindowEvent = null;
+            renderCardZones();
+        }
+
+        async function waitForOpponentResponse(activatedCard, activatingColor) {
+            const oppColor = activatingColor === 'black' ? 'white' : 'black';
+            const oppHand = cardState[oppColor].hand;
+
+            // 检查对方是否持有「徒劳无功」且气值充足（3气）
+            const tlwgIdx = oppHand.findIndex(c => c.id === '徒劳无功');
+            if (tlwgIdx === -1) return false; // 对方没有连锁牌，直接结算
+
+            const tlwgCard = oppHand[tlwgIdx];
+            if (playerVitality[oppColor] < tlwgCard.cost) return false; // 气值不足
+
+            const oppLabel = oppColor === 'black' ? '黑方' : '白方';
+            const atkLabel = activatingColor === 'black' ? '黑方' : '白方';
+
+            // 弹出响应窗口（本地模式）
+            const wantsToCounter = confirm(
+                `【⚡ 连锁响应窗口 ⚡】\n\n` +
+                `${atkLabel}刚发动了「${activatedCard.name}」，效果尚未结算。\n\n` +
+                `${oppLabel}手中持有：「徒劳无功」(耗 ${tlwgCard.cost} 气)\n` +
+                `效果：使对方此卡完全失效，其气耗已被扣除不退还。\n你方额外支付 ${tlwgCard.cost} 气。\n\n` +
+                `当前${oppLabel}气值：${playerVitality[oppColor]} 气\n\n` +
+                `确定(OK) = 使用「徒劳无功」无效化\n取消(Cancel) = 放弃响应，对方效果正常结算`
+            );
+
+            if (!wantsToCounter) return false; // 放弃响应
+
+            // 对方扣除「徒劳无功」的费用
+            playerVitality[oppColor] -= tlwgCard.cost;
+            oppHand.splice(tlwgIdx, 1);
+            cardState[oppColor].graveyard.push(tlwgCard);
+            updateVitalityDisplay();
+            renderCardZones();
+
+            alert(`「徒劳无功」连锁成功！\n「${activatedCard.name}」效果被完全无效化，双方气耗均不退还。`);
+            return true; // 被无效化
+        }
+
+        async function useSelectedCard(targetPos, options = {}) {
+            const isRemote = options.isRemote || false;
+            let color, index, card;
+
+            if (isRemote) {
+                color = options.color;
+                index = cardState[color].hand.findIndex(c => c.id === options.cardId);
+                if (index === -1) return false;
+                card = cardState[color].hand[index];
+            } else {
+                if (!selectedCard) return false;
+                color = selectedCard.color;
+                index = selectedCard.index;
+                card = cardState[color].hand[index];
+            }
+            if (!card) { if (!isRemote) cancelCardSelection(); return false; }
+
+            // 目标合法性校验
+            if (!isRemote && CARDS_REQUIRE_TARGET.includes(card.id)) {
+                if (!targetPos) { alert("该卡牌需要选择一个目标！"); cancelCardSelection(); return false; }
+                const targetPiece = grid[targetPos.r][targetPos.c];
+                const elemBuffs = { '无坚不摧': 'metal', '星火燎原': 'fire', '移花接木': 'wood', '行云流水': 'water', '缩地成寸': 'earth' };
+                if (elemBuffs[card.id]) {
+                    if (!targetPiece || targetPiece.color !== color || !targetPiece.isRevealed || targetPiece.type !== elemBuffs[card.id]) {
+                        alert(`「${card.name}」只能对己方已揭开的【${getSymbolByType(elemBuffs[card.id])}】棋使用！`);
+                        cancelCardSelection(); return false;
+                    }
+                }
+                // ===== 新卡牌目标合法性校验（扣费前验证，避免消耗卡后目标无效）=====
+                const opp = color === 'black' ? 'white' : 'black';
+                const isFiveElem = p => p && p.type !== 'yin' && p.type !== 'yang';
+                const isYinYang = p => p && (p.type === 'yin' || p.type === 'yang');
+                const targetValidation = {
+                    '颠倒乾坤': () => isYinYang(targetPiece) && targetPiece.color === color,
+                    '此消彼长': () => isYinYang(targetPiece),
+                    '画地为牢': () => isFiveElem(targetPiece) && targetPiece.color === opp && targetPiece.isRevealed,
+                    '偷梁换柱': () => isFiveElem(targetPiece) && targetPiece.isRevealed,
+                    '聚散浮沉': () => isFiveElem(targetPiece) && targetPiece.isRevealed,
+                    '含沙射影': () => targetPiece && targetPiece.color === color,
+                    '借尸还魂': () => isYinYang(targetPiece) && targetPiece.color === color,
+                };
+                const errMsg = {
+                    '颠倒乾坤': '请选择己方阴阳棋子！',
+                    '此消彼长': '请选择棋盘上的阴阳棋子！',
+                    '画地为牢': '请选择敌方已揭开的五行棋子！',
+                    '偷梁换柱': '请选择已揭开的五行棋子！',
+                    '聚散浮沉': '请选择已揭开的五行棋子（未揭开或阴阳棋无效）！',
+                    '含沙射影': '请选择己方任意棋子！',
+                    '借尸还魂': '请选择己方阴阳棋子作为献祭！',
+                };
+                if (targetValidation[card.id] && !targetValidation[card.id]()) {
+                    alert(`「${card.name}」：目标不合法——${errMsg[card.id] || '请重新选择目标。'}`);
+                    cancelCardSelection(); return false;
+                }
+            }
+
+
+            let actualCost = card.cost;
+            if (card.id === '无中生有') actualCost = options.wzsyCost || card.cost;
+
+            // 破釜沉舟：当前玩家的 field 中有此卡时，卡高不即时扣除卿记账
+            const hasPFCZ = !isRemote && card.id !== '破釜沉舟' && cardState[color].field.some(c => c.id === '破釜沉舟');
+            if (hasPFCZ) {
+                loanedCosts[color] += actualCost;
+                actualCost = 0; // 本次免费
+            }
+
+            if (!isRemote && playerVitality[color] < actualCost) {
+                alert(`气值不足！需要 ${actualCost} 点气`);
+                if (!isRemote) cancelCardSelection(); return false;
+            }
+            playerVitality[color] -= actualCost;
+            cardState[color].hand.splice(index, 1);
+
+            if (card.dur === 'permanent' || card.dur === 'turn') {
+                if (targetPos) card.targetRef = `${targetPos.r},${targetPos.c}`;
+                cardState[color].field.push(card);
+            } else {
+                cardState[color].graveyard.push(card);
+            }
+
+            if (!isRemote) cancelCardSelection();
+            updateVitalityDisplay();
+            renderCardZones();
+
+            // ===== 连锁响应窗口 =====
+            // 非远端发动时，给对方一次机会以「徒劳无功」无效化本卡效果
+            // 「徒劳无功」本身不触发响应窗口（避免无限递归）
+            let negated = false;
+            if (!isRemote && card.id !== '徒劳无功') {
+                negated = await waitForOpponentResponse(card, color);
+            }
+            if (negated) {
+                renderCardZones();
+                renderBoard();
+                cardsPlayedThisTurn++;
+                return true; // 被无效化，不结算效果
+            }
+
+            // 核心效果结算 (异步)
+            const generatedEffectPayload = await applyCardEffect(card, color, targetPos, isRemote ? options.effectPayload : null, options.wzsyCost);
+
+            if (!isRemote && myRoom) {
+                sendActionToServer('use_card', {
+                    color: color,
+                    cardId: card.id,
+                    targetPos: targetPos,
+                    effectPayload: generatedEffectPayload,
+                    wzsyCost: options.wzsyCost
+                });
+            }
+
+            renderBoard();
+            updateVitalityDisplay();
+            renderCardZones();
+            cardsPlayedThisTurn++; // 本回合用牌计数 +1
+            return true;
+        }
+
+        // 仅临时为 getSymbolByType 写一个短函数，之前的代码里可能有，但为了安全直接在这里用 switch
+        function getSymbolByType(type) {
+            const map = { metal: '金', wood: '木', water: '水', fire: '火', earth: '土', yin: '阴', yang: '阳' };
+            return map[type] || '';
+        }
+
+        async function applyCardEffect(card, color, targetPos, remotePayload, wzsyCost) {
+            const opp = color === 'black' ? 'white' : 'black';
+            const targetPiece = targetPos ? grid[targetPos.r][targetPos.c] : null;
+
+            // 1. 五行专属强化卡 (打通 Buff 赋予链路)
+            const elemBuffs = ['无坚不摧', '星火燎原', '移花接木', '行云流水', '缩地成寸'];
+            if (elemBuffs.includes(card.id) && targetPiece) {
+                if (!targetPiece.buffs) targetPiece.buffs = [];
+                if (!targetPiece.buffs.includes(card.id)) {
+                    targetPiece.buffs.push(card.id);
+                }
+                console.log(`[卡牌发动] ${card.name} 赋予 ${targetPos.r},${targetPos.c}`);
+                return null;
+            }
+
+            switch (card.id) {
+                case '无中生有': {
+                    const num = wzsyCost || 2;
+                    for (let i = 0; i < num; i++) drawCard(color);
+                    if (remotePayload && remotePayload.discardedIds) {
+                        // 远端：用卡牌ID定位并移除
+                        const hand = cardState[color].hand;
+                        remotePayload.discardedIds.forEach(cid => {
+                            const idx = hand.findIndex(c => c.id === cid);
+                            if (idx !== -1) { const c = hand.splice(idx, 1)[0]; cardState[color].graveyard.push(c); }
+                        });
+                        return null;
+                    } else {
+                        const result = await forceDiscard(color, num);
+                        return { discardedIds: result.ids || [] };
+                    }
+                }
+                case '探囊取物': {
+                    if (cardState[color].deck.length > 0) {
+                        let chosenCardId;
+                        if (remotePayload && remotePayload.chosenCardId !== undefined) {
+                            chosenCardId = remotePayload.chosenCardId;
+                        } else {
+                            const sel = await openCardSelectModal('探囊取物：检索牌库', '请从牌库中选择 1 张加入手牌', cardState[color].deck, 1, false);
+                            if (sel && sel.length > 0) chosenCardId = cardState[color].deck[sel[0]]?.id;
+                        }
+                        if (chosenCardId !== undefined) {
+                            const deckIdx = cardState[color].deck.findIndex(c => c.id === chosenCardId);
+                            if (deckIdx !== -1) {
+                                const chosenCard = cardState[color].deck.splice(deckIdx, 1)[0];
+                                cardState[color].hand.push(chosenCard);
+                                if (!remotePayload) alert(`「探囊取物」：检索到「${chosenCard.name}」，已向对手展示。`);
+                            }
+                            cardState[color].deck = shuffleArr(cardState[color].deck); // 修复：保存洗牌后的返回值
+                            return { chosenCardId };
+                        }
+                    } else {
+                        if (!remotePayload) alert('牌库已空，无法检索。');
+                    }
+                    break;
+                }
+                case '遗泽后世': {
+                    // 触发条件：上一回合对方吃掉了我方五行棋
+                    const hasCapEvent = prevTurnCaptureEvents.some(e => e.attackerColor === opp && e.defenderColor === color);
+                    if (!hasCapEvent && !remotePayload) {
+                        playerVitality[color] += card.cost; updateVitalityDisplay();
+                        const gi = cardState[color].graveyard.lastIndexOf(card);
+                        if (gi !== -1) cardState[color].graveyard.splice(gi, 1);
+                        cardState[color].hand.push(card);
+                        alert('「遗泽后世」触发失败：上一回合对手未吃掉你的任何五行棋！');
+                        return null;
+                    }
+                    drawCard(color);
+                    checkHandLimit(color);
+                    break;
+                }
+                case '生生不息': {
+                    // 触发条件：上一回合对方用"被我方棋子所生的属性"吃掉了我方棋
+                    const hasGenEvent = prevTurnCaptureEvents.some(e =>
+                        e.attackerColor === opp && e.defenderColor === color &&
+                        GENERA[e.defenderType] === e.attackerType // 如：木(被吃)生火(攻击方)
+                    );
+                    if (!hasGenEvent && !remotePayload) {
+                        playerVitality[color] += card.cost; updateVitalityDisplay();
+                        const gi = cardState[color].graveyard.lastIndexOf(card);
+                        if (gi !== -1) cardState[color].graveyard.splice(gi, 1);
+                        cardState[color].hand.push(card);
+                        alert('「生生不息」触发失败：上一回合对手未用"被你生的属性"吃掉你的棋！');
+                        return null;
+                    }
+                    playerVitality[color] = Math.min(50, playerVitality[color] + 2);
+                    updateVitalityDisplay();
+                    break;
+                }
+                case '登峰造极':
+                    if (!window.globalBuffs) window.globalBuffs = {};
+                    window.globalBuffs[color + '_baseEnergyBonus'] = (window.globalBuffs?.[color + '_baseEnergyBonus'] || 0) + 1;
+                    alert('「登峰造极」：己方所有五行棋子基础内气永久+1，此后每吃掉一枚敌方五行棋回复2气！');
+                    break;
+                case '斗转星移': {
+                    if (cardState[color].hand.length > 0) {
+                        let washedIds;
+                        if (remotePayload && remotePayload.washedIds) {
+                            washedIds = remotePayload.washedIds;
+                        } else {
+                            const sel = await openCardSelectModal('斗转星移：手牌调度', '请选择任意数量卡牌洗回牌库，将抽取等量新牌', cardState[color].hand, -1, false);
+                            if (sel && sel.length > 0) {
+                                washedIds = sel.map(idx => cardState[color].hand[idx]?.id).filter(Boolean);
+                            }
+                        }
+                        if (washedIds && washedIds.length > 0) {
+                            actionBlockedThisTurn = true;
+                            washedIds.forEach(cid => {
+                                const idx = cardState[color].hand.findIndex(c => c.id === cid);
+                                if (idx !== -1) { const c = cardState[color].hand.splice(idx, 1)[0]; cardState[color].deck.push(c); }
+                            });
+                            cardState[color].deck = shuffleArr(cardState[color].deck); // 修复：保存洗牌返回值
+                            for (let i = 0; i < washedIds.length; i++) drawCard(color);
+                            return { washedIds };
+                        }
+                    }
+                    break;
+                }
+                case '暗度陈仓':
+                    if (cardState[opp].hand.length > 0) {
+                        let selIdx;
+                        if (remotePayload && remotePayload.selectedOppHandIdx !== undefined) {
+                            selIdx = remotePayload.selectedOppHandIdx;
+                        } else {
+                            const sel = await openCardSelectModal('暗度陈仓：盲打敌方手牌', '请选择 1 张敌方手牌进行弃置（盲选，你无法看到牌面）', cardState[opp].hand, 1, true);
+                            if (sel && sel.length > 0) selIdx = sel[0];
+                        }
+                        if (selIdx !== undefined) {
+                            actionBlockedThisTurn = true;
+                            const discardedCard = cardState[opp].hand.splice(selIdx, 1)[0];
+                            cardState[opp].graveyard.push(discardedCard);
+                            if (!remotePayload) alert(`你成功弃置了敌方的「${discardedCard.name}」！`);
+                            return { selectedOppHandIdx: selIdx };
+                        }
+                    } else {
+                        if (!remotePayload) alert("敌方暂无手牌可以弃置。");
+                    }
+                    break;
+                // ===== 新卡牌效果 =====
+                case '乘胜追击': {
+                    // dur 已是 'turn'，useSelectedCard 会自动将其推入 field
+                    alert('「乘胜追击」已启动：本回合相克吃子后可获额外一次行动！');
+                    break;
+                }
+                case '以战养战': {
+                    // dur 已是 'turn'，useSelectedCard 会自动将其推入 field
+                    alert('「以战养战」已就位：本回合满足条件的吃子将自动回复气血！');
+                    break;
+                }
+                case '借尸还魂': {
+                    const myDead = deadPieces[color];
+                    if (!targetPiece || targetPiece.color !== color || (targetPiece.type !== 'yin' && targetPiece.type !== 'yang')) {
+                        if (!remotePayload) alert('「借尸还魂」：请点击己方阴阳棋子作为献祭！');
+                        break;
+                    }
+                    if (myDead.length === 0) { if (!remotePayload) alert('「借尸还魂」：没有可复活的五行棋子！'); break; }
+                    let reviveIdx;
+                    if (remotePayload && remotePayload.reviveIdx !== undefined) {
+                        reviveIdx = remotePayload.reviveIdx;
+                    } else {
+                        const opts = myDead.map((d, i) => ({ ...d, id: `dead_${i}`, name: `${d.symbol}(${d.type})` }));
+                        const sel = await openCardSelectModal('借尸还魂：选择复活目标', '请从已死亡的五行棋子中选 1 枚复活', opts, 1, false);
+                        if (sel && sel.length > 0) reviveIdx = sel[0];
+                    }
+                    if (reviveIdx !== undefined) {
+                        const revived = myDead[reviveIdx];
+                        playerVitality[color] -= revived.originalEnergy; // 额外气血代价
+                        updateVitalityDisplay();
+                        // 献祭阴阳棋
+                        grid[targetPos.r][targetPos.c] = null;
+                        // 在原位置复活
+                        const revivedPiece = { type: revived.type, color, symbol: revived.symbol, isRevealed: true, justRevived: true };
+                        grid[targetPos.r][targetPos.c] = revivedPiece;
+                        myDead.splice(reviveIdx, 1);
+                        return { reviveIdx };
+                    }
+                    break;
+                }
+                case '破釜沉舟': {
+                    // 该卡已放入 field（dur=turn），在 useSelectedCard 中检测它实现免费效果
+                    // 标记 field 卡：当前玩家的 破釜沉舟 卡已在 field，useSelectedCard 会检查
+                    alert('「破釜沉舟」：本回合所有卡牌免费发动，但欠款将在下回合强制结算！风险极高！');
+                    break;
+                }
+                case '噤若寒蝉': {
+                    actionBlockedThisTurn = true; // 我方本回合无法行棋
+                    // 找到刚推入 field 的卡，设置 turnsLeft=2 使其跨越当前回合及对手整个回合
+                    const jrcCard = cardState[color].field.find(c => c.id === '噤若寒蝉');
+                    if (jrcCard) jrcCard.turnsLeft = 2; // 确保跨越 1. 我方当前余下时间 2. 对方整个回合
+                    alert('「噤若寒蝉」：你放弃本回合行棋，换取接下来的敌方回合内绝对禁卡！');
+                    break;
+                }
+                case '玉石俱焚': {
+                    // 反制卡：触发连锁时的事件记录在 counterWindowEvent
+                    const ev = counterWindowEvent;
+                    if (!ev && !remotePayload) {
+                        playerVitality[color] += card.cost; updateVitalityDisplay();
+                        const gi = cardState[color].graveyard.lastIndexOf(card);
+                        if (gi !== -1) cardState[color].graveyard.splice(gi, 1);
+                        cardState[color].hand.push(card);
+                        alert('「玉石俱焚」触发失败：未检测到吃子事件上下文！'); return null;
+                    }
+                    if (ev && ev.attackerPos) {
+                        const { r: ar, c: ac } = ev.attackerPos;
+                        if (grid[ar] && grid[ar][ac] && grid[ar][ac].color === opp) {
+                            deadPieces[opp].push({ type: grid[ar][ac].type, symbol: grid[ar][ac].symbol, originalEnergy: initialEnergyMap[grid[ar][ac].type] });
+                            grid[ar][ac] = null;
+                            alert('「玉石俱焚」：同归于尽！敌方攻击棋子也已坠入墓地！');
+                            renderBoard();
+                        }
+                    }
+                    break;
+                }
+                case '偷天换日': {
+                    // 触发条件：敌方本回合吃掉棋子（在 waitForCounterResponse 已过滤）
+                    let pos1, pos2;
+                    if (remotePayload && remotePayload.swap1 && remotePayload.swap2) {
+                        pos1 = remotePayload.swap1;
+                        pos2 = remotePayload.swap2;
+                    } else {
+                        document.getElementById('info').textContent = `【偷天换日】请依次点击场上两枚你要互换的【己方棋子】（第1/2枚）`;
+                        
+                        // 选取第一枚
+                        pos1 = await new Promise(resolve => {
+                            const handler1 = (e) => {
+                                const rect = canvas.getBoundingClientRect();
+                                const c = Math.floor((e.clientX - rect.left) / cellSize);
+                                const r = Math.floor((e.clientY - rect.top) / cellSize);
+                                if (r >= 0 && r < boardSize && c >= 0 && c < boardSize) {
+                                    const p = grid[r][c];
+                                    if (p && p.color === color) {
+                                        canvas.removeEventListener('click', handler1);
+                                        // 简单高亮反馈
+                                        const ctx = canvas.getContext('2d');
+                                        ctx.fillStyle = 'rgba(255, 255, 0, 0.4)';
+                                        ctx.fillRect(c * cellSize, r * cellSize, cellSize, cellSize);
+                                        resolve({ r, c });
+                                    } else {
+                                        alert('必须选择己方棋子！');
+                                    }
+                                }
+                            };
+                            canvas.addEventListener('click', handler1);
+                        });
+
+                        document.getElementById('info').textContent = `【偷天换日】请点击第二枚你要互换的【己方棋子】（第2/2枚）`;
+                        
+                        // 选取第二枚
+                        pos2 = await new Promise(resolve => {
+                            const handler2 = (e) => {
+                                const rect = canvas.getBoundingClientRect();
+                                const c = Math.floor((e.clientX - rect.left) / cellSize);
+                                const r = Math.floor((e.clientY - rect.top) / cellSize);
+                                if (r >= 0 && r < boardSize && c >= 0 && c < boardSize) {
+                                    if (r === pos1.r && c === pos1.c) {
+                                        alert('不能选择同一个棋子！');
+                                        return;
+                                    }
+                                    const p = grid[r][c];
+                                    if (p && p.color === color) {
+                                        canvas.removeEventListener('click', handler2);
+                                        resolve({ r, c });
+                                    } else {
+                                        alert('必须选择己方棋子！');
+                                    }
+                                }
+                            };
+                            canvas.addEventListener('click', handler2);
+                        });
+                    }
+
+                    // 交换位置
+                    const tmp = grid[pos1.r][pos1.c];
+                    grid[pos1.r][pos1.c] = grid[pos2.r][pos2.c];
+                    grid[pos2.r][pos2.c] = tmp;
+                    
+                    alert('「偷天换日」发动成功！两枚棋子已互换位置。');
+                    renderBoard();
+
+                    return { swap1: pos1, swap2: pos2 };
+                    break;
+                }
+                case '以柔克刚': {
+                    const ev = counterWindowEvent;
+                    if (!ev && !remotePayload) {
+                        playerVitality[color] += card.cost; updateVitalityDisplay();
+                        const gi = cardState[color].graveyard.lastIndexOf(card);
+                        if (gi !== -1) cardState[color].graveyard.splice(gi, 1);
+                        cardState[color].hand.push(card);
+                        alert('「以柔克刚」触发失败：未检测到吃子事件上下文！'); return null;
+                    }
+                    if (ev) {
+                        playerVitality[color] = Math.min(50, playerVitality[color] + ev.diffDamage); // 回复
+                        playerVitality[opp] -= ev.diffDamage; // 反弹
+                        updateVitalityDisplay();
+                        alert(`「以柔克刚」：回复 ${ev.diffDamage} 气，并向对手反弹同等伤害！`);
+                    }
+                    break;
+                }
+                case '枯木逢春': {
+                    const ev = counterWindowEvent;
+                    if (!ev && !remotePayload) {
+                        playerVitality[color] += card.cost; updateVitalityDisplay();
+                        const gi = cardState[color].graveyard.lastIndexOf(card);
+                        if (gi !== -1) cardState[color].graveyard.splice(gi, 1);
+                        cardState[color].hand.push(card);
+                        alert('「枯木逢春」触发失败：未检测到吃子事件上下文！'); return null;
+                    }
+                    // permanent 卡留场；后续每次损失时 executeMove 自动加 extraYinYangRights
+                    alert('「枯木逢春」永久留场：此后每次被敌方吃掉五行棋，你的下一回合将获得额外抛掷阴阳棋的爆兵权（每次发动仍需支付2气）！');
+                    break;
+                }
+                case '生生不息': {
+                    const ev = counterWindowEvent;
+                    if (!ev && !remotePayload) {
+                        // 0费 不用退气
+                        const gi = cardState[color].graveyard.lastIndexOf(card);
+                        if (gi !== -1) cardState[color].graveyard.splice(gi, 1);
+                        cardState[color].hand.push(card);
+                        alert('「生生不息」触发失败：未检测到吃子事件上下文！'); return null;
+                    }
+                    if (ev) {
+                        const myElem = ev.defenderType;
+                        const oppElem = ev.attackerType;
+                        // 相生判定：我生他 (如 木生火，我是木，他是火)
+                        if (GENERATE_RELATION[myElem] === oppElem) {
+                            playerVitality[color] = Math.min(50, playerVitality[color] + 2);
+                            updateVitalityDisplay();
+                            alert(`「生生不息」触发：我方"${getElemName(myElem)}"甘为"${getElemName(oppElem)}"之源，生命反哺，回复2点气血！`);
+                        } else {
+                            if (!remotePayload) alert(`「生生不息」未触发：敌方"${getElemName(oppElem)}"并非由我方"${getElemName(myElem)}"所生。`);
+                        }
+                    }
+                    break;
+                }
+                case '遗泽后世': {
+                    const ev = counterWindowEvent;
+                    if (!ev && !remotePayload) {
+                        playerVitality[color] += card.cost; updateVitalityDisplay();
+                        const gi = cardState[color].graveyard.lastIndexOf(card);
+                        if (gi !== -1) cardState[color].graveyard.splice(gi, 1);
+                        cardState[color].hand.push(card);
+                        alert('「遗泽后世」触发失败：未检测到吃子事件上下文！'); return null;
+                    }
+                    if (ev) {
+                        const drawnCard = drawCard(color);
+                        alert(drawnCard ? `「遗泽后世」触发：我方棋子阵亡遗留福祉，你立刻抽取了 1 张手牌！` : `「遗泽后世」触发：但你的牌库已经空了，无法抽牌！`);
+                        renderCardZones();
+                    }
+                    break;
+                }
+                case '颠倒乾坤': {
+                    if (!targetPiece || targetPiece.color !== color || (targetPiece.type !== 'yin' && targetPiece.type !== 'yang')) {
+                        if (!remotePayload) alert('「颠倒乾坤」：请选择己方阴阳棋子！'); break;
+                    }
+                    targetPiece.yinYangCanKill = true;
+                    // 设置持续时长，确保覆盖对手回合
+                    const cardInField = cardState[color].field.find(c => c.id === '颠倒乾坤' && c.targetRef === `${targetPos.r},${targetPos.c}`);
+                    if (cardInField) cardInField.turnsLeft = 2;
+                    return null;
+                }
+                case '此消彼长': {
+                    if (!targetPiece || (targetPiece.type !== 'yin' && targetPiece.type !== 'yang')) {
+                        if (!remotePayload) alert('「此消彼长」：请选择一枚阴阳棋子！'); break;
+                    }
+                    let mode;
+                    if (remotePayload) {
+                        mode = remotePayload.mode;
+                    } else {
+                        mode = confirm('「此消彼长」\n确定(OK)→己方调和（+1内气/+1场效）\n取消(Cancel)→敌方压制（-1内气/场效归零）')
+                            ? (targetPiece.color === color ? 'buff' : null)
+                            : (targetPiece.color === opp ? 'debuff' : null);
+                        if (!mode) {
+                            mode = targetPiece.color === color ? 'buff' : 'debuff';
+                        }
+                    }
+                    if (mode === 'buff' && targetPiece.color === color) {
+                        targetPiece.yinYangMod = 1; targetPiece.yinYangFieldMult = 2;
+                    } else if (mode === 'debuff' && targetPiece.color === opp) {
+                        targetPiece.yinYangMod = -1; targetPiece.yinYangFieldMult = 0;
+                    }
+                    // 设置持续时长
+                    const cardInField = cardState[color].field.find(c => c.id === '此消彼长' && c.targetRef === `${targetPos.r},${targetPos.c}`);
+                    if (cardInField) cardInField.turnsLeft = 2;
+                    return { mode };
+                }
+                case '画地为牢': {
+                    if (!targetPiece || targetPiece.color !== opp || !targetPiece.isRevealed ||
+                        targetPiece.type === 'yin' || targetPiece.type === 'yang') {
+                        if (!remotePayload) alert('「画地为牢」：请选择敌方已揭开的五行棋子！'); break;
+                    }
+                    targetPiece.frozen = true;
+                    // 设置持续时长
+                    const cardInField = cardState[color].field.find(c => c.id === '画地为牢' && c.targetRef === `${targetPos.r},${targetPos.c}`);
+                    if (cardInField) cardInField.turnsLeft = 2;
+                    return null;
+                }
+                case '偷梁换柱': {
+                    if (!targetPiece || !targetPiece.isRevealed || targetPiece.type === 'yin' || targetPiece.type === 'yang') {
+                        if (!remotePayload) alert('「偷梁换柱」：请选择已揭开的五行棋子！'); break;
+                    }
+                    const allElems = ['metal', 'wood', 'water', 'fire', 'earth'];
+                    const others = allElems.filter(e => e !== (targetPiece.tempElement || targetPiece.type));
+                    let newElem;
+                    if (remotePayload) {
+                        newElem = remotePayload.newElem;
+                    } else {
+                        const elemMap = { metal: '金', wood: '木', water: '水', fire: '火', earth: '土' };
+                        const chosen = prompt(`「偷梁换柱」：为"${targetPiece.symbol}"棋附加临时属性\n可选：${others.map(e => elemMap[e]).join('/')}`);
+                        const rev = Object.entries(elemMap).find(([k, v]) => v === chosen);
+                        if (rev && others.includes(rev[0])) newElem = rev[0];
+                        else { alert('输入无效或该属性已是当前属性。'); break; }
+                    }
+                    targetPiece.tempElement = newElem;
+                    return { newElem };
+                }
+                case '聚散浮沉': {
+                    if (!targetPiece || !targetPiece.isRevealed || targetPiece.type === 'yin' || targetPiece.type === 'yang') {
+                        if (!remotePayload) alert('「聚散浮沉」：请选择已揭开的五行棋子！'); break;
+                    }
+                    let jsMode;
+                    if (remotePayload) {
+                        jsMode = remotePayload.jsMode;
+                    } else {
+                        jsMode = targetPiece.color === color ? 'buff' : 'debuff';
+                        const confirm2 = confirm(targetPiece.color === color
+                            ? '「聚散浮沉」：聚（己方强化，+2基础内气）？\n确定=聚，取消=散（选择敌方来用散）'
+                            : '「聚散浮沉」：散（敌方削弱，-2基础内气）？确定=散');
+                        if (!confirm2) break;
+                    }
+                    targetPiece.tempEnergyMod = (jsMode === 'buff') ? 2 : -2;
+                    // 设置持续时长
+                    const cardInField = cardState[color].field.find(c => c.id === '聚散浮沉' && c.targetRef === `${targetPos.r},${targetPos.c}`);
+                    if (cardInField) cardInField.turnsLeft = 2;
+                    return { jsMode };
+                }
+                case '含沙射影': {
+                    if (!targetPiece || targetPiece.color !== color) {
+                        if (!remotePayload) alert('「含沙射影」：请选择己方任意棋子设置暗记！'); break;
+                    }
+                    targetPiece.hasTrap = true;
+                    if (!remotePayload) alert(`「含沙射影」：暗记已秘密附于棋子，对手不知。当该棋子被吃时陷阱触发！`);
+                    return null;
+                }
+                case '徒劳无功': {
+                    // 简化实现：无效化对方上一张打出的卡牌效果（如果还在手牌/墓地栈顶）
+                    // 网络对战时可连锁；本地模式简化为：移除对方墓地最后一张卡的效果标记
+                    if (!remotePayload) {
+                        const oppGrave = cardState[opp].graveyard;
+                        if (oppGrave.length > 0) {
+                            const negated = oppGrave[oppGrave.length - 1];
+                            alert(`「徒劳无功」：「${negated.name}」的效果被无效化（注：完整连锁逻辑需联网实战）。`);
+                        } else {
+                            alert('「徒劳无功」：对手当前无已使用的卡牌可无效化。');
+                        }
+                    }
+                    break;
+                }
+                default: break;
+
+            }
+            return null;
+        }
+
+        function openCardZoom(card) {
+            const durLabel = { permanent: '持续：永久', turn: '持续：本回合', instant: '即时发动' };
+            const typeLabel = { active: '主动', counter: '反制', instant: '即时' };
+            const inner = document.getElementById('card-zoom-inner');
+            inner.className = `card-${card.type}`; // 切换颜色主题
+            document.getElementById('czoom-cost').textContent = card.cost;
+            document.getElementById('czoom-icon').textContent = card.icon;
+            document.getElementById('czoom-name').textContent = card.name;
+            document.getElementById('czoom-subtype').textContent = typeLabel[card.type] || card.type;
+            document.getElementById('czoom-dur').textContent = durLabel[card.dur] || card.dur;
+            document.getElementById('czoom-desc').textContent = card.desc;
+            document.getElementById('card-zoom-modal').classList.add('open');
+        }
+
+        function closeCardZoom() {
+            document.getElementById('card-zoom-modal').classList.remove('open');
+        }
+
+        function openGraveyardModal(color) {
+            const label = color === 'black' ? '黑方' : '白方';
+            document.getElementById('grave-modal-title').textContent = `💀 ${label}墓地（全场公开）`;
+            
+            // 1. 渲染死亡棋子
+            const data = deadPieces[color] || { fiveElements: [], yin: 0, yang: 0 };
+            const pCont = document.getElementById('grave-modal-pieces');
+            const pEmpty = document.getElementById('grave-pieces-empty');
+            pCont.innerHTML = '';
+            
+            const totalYinYang = (data.yin || 0) + (data.yang || 0);
+            const hasFiveElements = data.fiveElements && data.fiveElements.length > 0;
+
+            if (!hasFiveElements && totalYinYang === 0) {
+                pEmpty.style.display = 'block';
+            } else {
+                pEmpty.style.display = 'none';
+                // 渲染五行棋
+                if (hasFiveElements) {
+                    data.fiveElements.forEach(p => {
+                        const el = document.createElement('div');
+                        el.className = `piece dead-piece-item ${color} ${p.type}`;
+                        el.textContent = p.symbol;
+                        el.title = `${label}${getElemName(p.type)} (初始内气:${p.originalEnergy})`;
+                        pCont.appendChild(el);
+                    });
+                }
+                // 渲染阴阳棋计数（合并为一个图标代表）
+                if (totalYinYang > 0) {
+                    const el = document.createElement('div');
+                    el.className = `piece dead-piece-item ${color} yin-yang-representative`;
+                    el.textContent = '☯'; 
+                    el.title = `${label}阴阳棋 (共计:${totalYinYang}枚)`;
+                    
+                    const badge = document.createElement('div');
+                    badge.style.cssText = 'position:absolute;bottom:-5px;right:-5px;background:#ff4444;color:white;font-size:10px;padding:1px 4px;border-radius:10px;border:1px solid white;line-height:1;';
+                    badge.textContent = `*${totalYinYang}`;
+                    
+                    el.style.position = 'relative';
+                    el.appendChild(badge);
+                    pCont.appendChild(el);
+                }
+            }
+
+            // 2. 渲染弃牌堆
+            const grave = cardState[color].graveyard;
+            const listEl = document.getElementById('grave-modal-list');
+            const emptyEl = document.getElementById('grave-modal-empty');
+            listEl.innerHTML = '';
+            if (grave.length === 0) {
+                emptyEl.style.display = 'block';
+            } else {
+                emptyEl.style.display = 'none';
+                const typeLabel = { active: '主动', counter: '反制', instant: '即时' };
+                const durLabel = { permanent: '永久', turn: '回合', instant: '即时' };
+                grave.forEach(card => {
+                    const wrap = document.createElement('div');
+                    wrap.style.cssText = 'transform:scale(0.85); transform-origin: top left; width: 68px; height: 110px; margin-right: -10px; margin-bottom: -10px;';
+                    
+                    const el = document.createElement('div');
+                    el.className = `hand-card card-${card.type}`;
+                    el.innerHTML = `
+                        <div class="hand-card-cost">${card.cost}</div>
+                        <div class="hand-card-icon">${card.icon}</div>
+                        <div class="hand-card-name" style="font-size:9px;">${card.name}</div>
+                    `;
+                    el.title = `【${card.name}】\n${card.desc}`;
+                    el.onclick = () => openCardZoom(card);
+                    wrap.appendChild(el);
+                    listEl.appendChild(wrap);
+                });
+            }
+            
+            document.getElementById('graveyard-modal').style.display = 'block';
+        }
+
+        function getElemName(type) {
+            const names = { metal: '金', wood: '木', water: '水', fire: '火', earth: '土' };
+            return names[type] || type;
+        }
+
 
         function initData() {
             if (myRoom && socket) {
@@ -927,15 +3759,17 @@
             const bC = shuffle([0, 1, 2, 3, 4, 5, 6, 7, 8]).slice(0, 5), wC = shuffle([0, 1, 2, 3, 4, 5, 6, 7, 8]).slice(0, 5);
             const tmpl = [{ type: 'metal', s: '金' }, { type: 'wood', s: '木' }, { type: 'water', s: '水' }, { type: 'fire', s: '火' }, { type: 'earth', s: '土' }];
             tmpl.forEach((p, i) => {
-                grid[0][bC[i]] = { type: p.type, color: 'black', symbol: p.s, isRevealed: false };
-                grid[8][wC[i]] = { type: p.type, color: 'white', symbol: p.s, isRevealed: false };
+                grid[8][bC[i]] = { type: p.type, color: 'black', symbol: p.s, isRevealed: false };
+                grid[0][wC[i]] = { type: p.type, color: 'white', symbol: p.s, isRevealed: false };
             });
             updateVitalityDisplay();
+            initCardDecks();
         }
 
         initData();
         renderBoard();
         updateVitalityDisplay();
+
     </script>
 </body>
 
